@@ -13,6 +13,20 @@ public struct Section: Identifiable, Equatable {
   public var layout: ListLayout
   /// 섹션의 콘텐츠 인셋
   public var contentInsets: NSDirectionalEdgeInsets
+  /// header/footer를 포함한 전체 섹션 인셋
+  public var sectionInsets: NSDirectionalEdgeInsets
+  /// 다음 섹션과의 간격
+  public var sectionSpacing: CGFloat
+  /// 섹션 header
+  public var header: SectionSupplementary?
+  /// 섹션 footer
+  public var footer: SectionSupplementary?
+
+  private struct AutomaticID: Hashable {
+    let fileID: String
+    let line: UInt
+    let column: UInt
+  }
 
   /// Section을 초기화합니다.
   /// - Parameters:
@@ -24,12 +38,20 @@ public struct Section: Identifiable, Equatable {
     id: some Hashable,
     rows: [Row],
     layout: ListLayout = .vertical(),
-    contentInsets: NSDirectionalEdgeInsets = .zero
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    header: SectionSupplementary? = nil,
+    footer: SectionSupplementary? = nil
   ) {
     self.id = id
     self.rows = rows
     self.layout = layout
     self.contentInsets = contentInsets
+    self.sectionInsets = sectionInsets
+    self.sectionSpacing = sectionSpacing
+    self.header = header
+    self.footer = footer
   }
 
   /// 행 빌더 클로저로 Section을 초기화합니다.
@@ -42,12 +64,203 @@ public struct Section: Identifiable, Equatable {
     id: some Hashable,
     layout: ListLayout = .vertical(),
     contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    header: SectionSupplementary? = nil,
+    footer: SectionSupplementary? = nil,
     @RowsBuilder _ rows: () -> [Row]
   ) {
     self.id = id
     self.rows = rows()
     self.layout = layout
     self.contentInsets = contentInsets
+    self.sectionInsets = sectionInsets
+    self.sectionSpacing = sectionSpacing
+    self.header = header
+    self.footer = footer
+  }
+
+  /// SwiftUI 스타일로 rows 뒤에 header와 footer 클로저를 붙여 Section을 초기화합니다.
+  ///
+  /// ```swift
+  /// Section(id: "section") {
+  ///   Row(id: "row", component: RowComponent(...))
+  /// } header: {
+  ///   Header(id: "header", component: HeaderComponent(...))
+  /// } footer: {
+  ///   Footer(id: "footer", component: FooterComponent(...))
+  /// }
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - id: 섹션의 고유 식별자
+  ///   - layout: 레이아웃 (기본값: 수직 레이아웃)
+  ///   - contentInsets: 콘텐츠 인셋 (기본값: .zero)
+  ///   - rows: 행 배열을 반환하는 클로저
+  ///   - header: header를 반환하는 클로저
+  ///   - footer: footer를 반환하는 클로저
+  public init(
+    id: some Hashable,
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    @SectionSupplementaryBuilder header: () -> SectionSupplementary?,
+    @SectionSupplementaryBuilder footer: () -> SectionSupplementary?
+  ) {
+    self.id = id
+    self.rows = rows()
+    self.layout = layout
+    self.contentInsets = contentInsets
+    self.sectionInsets = sectionInsets
+    self.sectionSpacing = sectionSpacing
+    self.header = header()
+    self.footer = footer()
+  }
+
+  /// SwiftUI 스타일로 id를 생략하고 Section을 초기화합니다.
+  /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
+  ///
+  /// diff 안정성이 중요한 동적 섹션에서는 명시적인 `id:` 사용을 권장합니다.
+  public init(
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    fileID: StaticString = #fileID,
+    line: UInt = #line,
+    column: UInt = #column
+  ) {
+    self.init(
+      id: Self.automaticID(fileID: fileID, line: line, column: column),
+      layout: layout,
+      contentInsets: contentInsets,
+      sectionInsets: sectionInsets,
+      sectionSpacing: sectionSpacing,
+      rows
+    )
+  }
+
+  /// SwiftUI 스타일로 id를 생략하고 rows 뒤에 header와 footer 클로저를 붙여 Section을 초기화합니다.
+  /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
+  public init(
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    @SectionSupplementaryBuilder header: () -> SectionSupplementary?,
+    @SectionSupplementaryBuilder footer: () -> SectionSupplementary?,
+    fileID: StaticString = #fileID,
+    line: UInt = #line,
+    column: UInt = #column
+  ) {
+    self.init(
+      id: Self.automaticID(fileID: fileID, line: line, column: column),
+      layout: layout,
+      contentInsets: contentInsets,
+      sectionInsets: sectionInsets,
+      sectionSpacing: sectionSpacing,
+      rows,
+      header: header,
+      footer: footer
+    )
+  }
+
+  /// SwiftUI 스타일로 rows 뒤에 header 클로저를 붙여 Section을 초기화합니다.
+  public init(
+    id: some Hashable,
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    @SectionSupplementaryBuilder header: () -> SectionSupplementary?
+  ) {
+    self.init(
+      id: id,
+      layout: layout,
+      contentInsets: contentInsets,
+      sectionInsets: sectionInsets,
+      sectionSpacing: sectionSpacing,
+      rows,
+      header: header,
+      footer: { nil }
+    )
+  }
+
+  /// SwiftUI 스타일로 id를 생략하고 rows 뒤에 header 클로저를 붙여 Section을 초기화합니다.
+  /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
+  public init(
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    @SectionSupplementaryBuilder header: () -> SectionSupplementary?,
+    fileID: StaticString = #fileID,
+    line: UInt = #line,
+    column: UInt = #column
+  ) {
+    self.init(
+      id: Self.automaticID(fileID: fileID, line: line, column: column),
+      layout: layout,
+      contentInsets: contentInsets,
+      sectionInsets: sectionInsets,
+      sectionSpacing: sectionSpacing,
+      rows,
+      header: header,
+      footer: { nil }
+    )
+  }
+
+  /// SwiftUI 스타일로 rows 뒤에 footer 클로저를 붙여 Section을 초기화합니다.
+  public init(
+    id: some Hashable,
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    @SectionSupplementaryBuilder footer: () -> SectionSupplementary?
+  ) {
+    self.init(
+      id: id,
+      layout: layout,
+      contentInsets: contentInsets,
+      sectionInsets: sectionInsets,
+      sectionSpacing: sectionSpacing,
+      rows,
+      header: { nil },
+      footer: footer
+    )
+  }
+
+  /// SwiftUI 스타일로 id를 생략하고 rows 뒤에 footer 클로저를 붙여 Section을 초기화합니다.
+  /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
+  public init(
+    layout: ListLayout = .vertical(),
+    contentInsets: NSDirectionalEdgeInsets = .zero,
+    sectionInsets: NSDirectionalEdgeInsets = .zero,
+    sectionSpacing: CGFloat = 0,
+    @RowsBuilder _ rows: () -> [Row],
+    @SectionSupplementaryBuilder footer: () -> SectionSupplementary?,
+    fileID: StaticString = #fileID,
+    line: UInt = #line,
+    column: UInt = #column
+  ) {
+    self.init(
+      id: Self.automaticID(fileID: fileID, line: line, column: column),
+      layout: layout,
+      contentInsets: contentInsets,
+      sectionInsets: sectionInsets,
+      sectionSpacing: sectionSpacing,
+      rows,
+      header: { nil },
+      footer: footer
+    )
   }
 
   /// 섹션의 레이아웃을 설정합니다.
@@ -82,6 +295,70 @@ public struct Section: Identifiable, Equatable {
     contentInsets(insets)
   }
 
+  /// header/footer를 포함한 전체 섹션 인셋을 설정합니다.
+  /// - Parameter insets: 적용할 인셋
+  /// - Returns: 전체 섹션 인셋이 설정된 새로운 Section
+  public func sectionInsets(_ insets: NSDirectionalEdgeInsets) -> Self {
+    var copy = self
+    copy.sectionInsets = insets
+    return copy
+  }
+
+  /// header/footer를 포함한 전체 섹션 인셋을 설정합니다. (sectionInsets 메서드의 별칭)
+  /// - Parameter insets: 적용할 인셋
+  /// - Returns: 전체 섹션 인셋이 설정된 새로운 Section
+  public func withSectionInsets(_ insets: NSDirectionalEdgeInsets) -> Self {
+    sectionInsets(insets)
+  }
+
+  /// 다음 섹션과의 간격을 설정합니다.
+  /// - Parameter spacing: 적용할 간격
+  /// - Returns: 섹션 간격이 설정된 새로운 Section
+  public func sectionSpacing(_ spacing: CGFloat) -> Self {
+    var copy = self
+    copy.sectionSpacing = spacing
+    return copy
+  }
+
+  /// 다음 섹션과의 간격을 설정합니다. (sectionSpacing 메서드의 별칭)
+  /// - Parameter spacing: 적용할 간격
+  /// - Returns: 섹션 간격이 설정된 새로운 Section
+  public func withSectionSpacing(_ spacing: CGFloat) -> Self {
+    sectionSpacing(spacing)
+  }
+
+  /// 섹션 header를 설정합니다.
+  /// - Parameter header: 적용할 header
+  /// - Returns: header가 설정된 새로운 Section
+  public func header(_ header: SectionSupplementary?) -> Self {
+    var copy = self
+    copy.header = header
+    return copy
+  }
+
+  /// 섹션 header를 설정합니다. (header 메서드의 별칭)
+  /// - Parameter header: 적용할 header
+  /// - Returns: header가 설정된 새로운 Section
+  public func withSectionHeader(_ header: SectionSupplementary?) -> Self {
+    self.header(header)
+  }
+
+  /// 섹션 footer를 설정합니다.
+  /// - Parameter footer: 적용할 footer
+  /// - Returns: footer가 설정된 새로운 Section
+  public func footer(_ footer: SectionSupplementary?) -> Self {
+    var copy = self
+    copy.footer = footer
+    return copy
+  }
+
+  /// 섹션 footer를 설정합니다. (footer 메서드의 별칭)
+  /// - Parameter footer: 적용할 footer
+  /// - Returns: footer가 설정된 새로운 Section
+  public func withSectionFooter(_ footer: SectionSupplementary?) -> Self {
+    self.footer(footer)
+  }
+
   /// 두 Section이 같은지 비교합니다.
   /// id, layout, contentInsets를 비교합니다.
   public static func == (lhs: Section, rhs: Section) -> Bool {
@@ -91,6 +368,27 @@ public struct Section: Identifiable, Equatable {
       && lhs.contentInsets.leading == rhs.contentInsets.leading
       && lhs.contentInsets.bottom == rhs.contentInsets.bottom
       && lhs.contentInsets.trailing == rhs.contentInsets.trailing
+      && lhs.sectionInsets.top == rhs.sectionInsets.top
+      && lhs.sectionInsets.leading == rhs.sectionInsets.leading
+      && lhs.sectionInsets.bottom == rhs.sectionInsets.bottom
+      && lhs.sectionInsets.trailing == rhs.sectionInsets.trailing
+      && lhs.sectionSpacing == rhs.sectionSpacing
+      && lhs.header == rhs.header
+      && lhs.footer == rhs.footer
+  }
+
+  private static func automaticID(
+    fileID: StaticString,
+    line: UInt,
+    column: UInt
+  ) -> AnyHashable {
+    AnyHashable(
+      AutomaticID(
+        fileID: String(describing: fileID),
+        line: line,
+        column: column
+      )
+    )
   }
 }
 

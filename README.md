@@ -133,13 +133,15 @@ struct PostComponent: ListComponent {
 | --- | --- | --- |
 | `ListAdapter` | `UICollectionView`의 data source, delegate, layout, update 적용을 담당합니다. | `apply`, `snapshot`, `configuration` |
 | `List` | collection view 전체 snapshot입니다. 여러 `Section`을 가집니다. | `List { ... }`, `onReachEnd` |
-| `Section` | row 묶음과 section 단위 layout/content inset을 가집니다. | `layout`, `contentInsets`, `withSectionLayout`, `withSectionContentInsets` |
+| `Section` | row 묶음과 section 단위 layout, inset, header/footer를 가집니다. | `layout`, `contentInsets`, `sectionInsets`, `sectionSpacing`, `header`, `footer` |
 | `Row` | collection view item 하나입니다. id와 component, row 이벤트를 가집니다. | `onSelect`, `onDisplay`, `onEndDisplay` |
 | `Cell` | `Row`와 같은 타입입니다. cell 중심 네이밍을 선호할 때 씁니다. | `didSelect`, `willDisplay` |
 | `ListComponent` | 앱 데이터를 UIKit view로 렌더링합니다. | `makeView`, `updateView`, `layoutView`, `makeCoordinator` |
 | `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality와 reuse identifier를 관리합니다. | `reuseIdentifier` |
 | `ListComponentContext` | component의 coordinator를 view 생성/업데이트에 전달합니다. | `context.coordinator` |
 | `ListLayout` | section별 compositional layout 방식을 표현합니다. | `.vertical`, `.grid`, `.custom` |
+| `Header` | 섹션 header supplementary view를 선언합니다. | `Header(id:component:layoutSize:)` |
+| `Footer` | 섹션 footer supplementary view를 선언합니다. | `Footer(id:component:layoutSize:)` |
 
 ## 제공 기능
 
@@ -164,22 +166,26 @@ struct PostComponent: ListComponent {
 | grid layout | 지정한 열 수의 grid section을 만듭니다. | `.layout(.grid(columns:itemSpacing:lineSpacing:))` |
 | custom layout | 직접 만든 `NSCollectionLayoutSection`을 section에 적용합니다. | `.layout(.custom { context in ... })` |
 | layout context | custom layout에서 section, index, environment를 참조합니다. | `ListLayoutContext` |
-| section content inset | section별 content inset을 지정합니다. | `.contentInsets(...)` |
-| compatibility modifier | 다른 list DSL에 익숙한 naming도 제공합니다. | `withSectionLayout`, `withSectionContentInsets` |
+| section header/footer | row가 아닌 실제 supplementary view로 header/footer를 렌더링합니다. | `Header`, `Footer` |
+| SwiftUI 스타일 section DSL | rows를 먼저 쓰고 아래에 `header`/`footer` trailing closure를 붙일 수 있습니다. | `Section { ... } header: { ... } footer: { ... }` |
+| row content inset | header/footer는 유지하고 row 영역에만 inset을 지정합니다. | `.contentInsets(...)` |
+| section 전체 inset | header/footer와 row를 함께 감싸는 전체 section inset을 지정합니다. | `.sectionInsets(...)` |
+| section 간격 | 현재 section과 다음 section 사이 간격을 지정합니다. | `.sectionSpacing(...)` |
+| compatibility modifier | 다른 list DSL에 익숙한 naming도 제공합니다. | `withSectionLayout`, `withSectionContentInsets`, `withSectionInsets`, `withSectionSpacing` |
 | row 선택 이벤트 | 선택된 row의 id, indexPath, cell, contentView를 받습니다. | `onSelect`, `didSelect` |
 | row 표시 이벤트 | cell 표시 시작 시점을 받습니다. | `onDisplay`, `willDisplay` |
 | row 표시 종료 이벤트 | cell 표시 종료 시점을 받습니다. | `onEndDisplay` |
 | reach-end 이벤트 | 끝 근처 도달 시 무한 스크롤/다음 페이지 로딩을 실행합니다. | `List.onReachEnd` |
-| horizontal scroll 감지 | collection view scroll direction에 따라 reach-end 기준 축을 바꿉니다. | `ReachEndOffset` || prefetch 이벤트 | collection view가 아이템을 prefetch할 때 리소스를 미리 로드합니다. | `CollectionViewPrefetchingPlugin` || SwiftUI 예제 앱 | SwiftUI app entry에서 UIKit view controller 예제를 표시합니다. | `UIViewControllerRepresentable` |
+| horizontal scroll 감지 | collection view scroll direction에 따라 reach-end 기준 축을 바꿉니다. | `ReachEndOffset` |
+| prefetch 이벤트 | collection view가 아이템을 prefetch할 때 리소스를 미리 로드합니다. | `CollectionViewPrefetchingPlugin` |
+| SwiftUI 예제 앱 | SwiftUI app entry에서 UIKit view controller 예제를 표시합니다. | `UIViewControllerRepresentable` |
 
 ## 아직 제공하지 않는 기능
 
 | 기능 | 상태 |
 | --- | --- |
-| supplementary header/footer | 예정 |
 | orthogonal section scrolling | 예정 |
 | refresh control wrapper | 예정 |
-| prefetch event | ✅ |
 | size cache | 예정 |
 | DocC 문서 | 예정 |
 
@@ -249,6 +255,8 @@ Section(id: "actions") {
 .contentInsets(.init(top: 0, leading: 16, bottom: 16, trailing: 16))
 ```
 
+`grid`의 `itemSpacing`은 item 사이의 가로 간격만 담당합니다. 섹션 바깥 좌우 여백은 `contentInsets`나 `sectionInsets`로 명시합니다.
+
 custom compositional layout:
 
 ```swift
@@ -268,7 +276,101 @@ Section(id: "custom") {
 })
 ```
 
-### 4. Row 이벤트 받기
+### 4. Header/Footer 사용하기
+
+`Header`와 `Footer`는 `Row`가 아니라 collection view supplementary view로 렌더링됩니다. 같은 `ListComponent` 프로토콜을 사용하므로 row component와 동일한 방식으로 view를 만들고 업데이트합니다.
+
+```swift
+Section(id: "profile") {
+  Row(id: "name", component: ProfileRowComponent(viewModel: name))
+  Row(id: "email", component: ProfileRowComponent(viewModel: email))
+} header: {
+  Header(
+    id: "profile-header",
+    component: TitleComponent(viewModel: .init(title: "프로필"))
+  )
+} footer: {
+  Footer(
+    id: "profile-footer",
+    component: CaptionComponent(viewModel: .init(text: "계정 정보는 언제든 변경할 수 있습니다."))
+  )
+}
+.layout(.vertical(spacing: 10))
+```
+
+기존 initializer 스타일도 유지됩니다.
+
+```swift
+Section(
+  id: "profile",
+  header: Header(id: "profile-header", component: TitleComponent(viewModel: title)),
+  footer: Footer(id: "profile-footer", component: CaptionComponent(viewModel: caption))
+) {
+  Row(id: "name", component: ProfileRowComponent(viewModel: name))
+}
+```
+
+`layoutSize`를 지정하면 header/footer 높이를 조정할 수 있습니다.
+
+```swift
+Footer(
+  id: "loading-footer",
+  component: LoadingComponent(viewModel: .init(title: "더 불러오는 중")),
+  layoutSize: .estimated(height: 72)
+)
+```
+
+### 5. Section modifier 이해하기
+
+섹션 여백 관련 modifier는 의도가 다릅니다.
+
+| Modifier | 적용 대상 | 용도 |
+| --- | --- | --- |
+| `.contentInsets(...)` | row 영역 | header/footer는 전체 폭으로 유지하고 내부 row만 들여쓰기 |
+| `.sectionInsets(...)` | header/footer + row 전체 | 섹션 전체를 카드처럼 함께 들여쓰기 |
+| `.sectionSpacing(...)` | 현재 section과 다음 section 사이 | 섹션 간 간격 |
+
+row만 들여쓰기:
+
+```swift
+Section {
+  Row(id: "content-1", component: RowComponent(viewModel: first))
+  Row(id: "content-2", component: RowComponent(viewModel: second))
+} header: {
+  Header(id: "header", component: HeaderComponent(viewModel: header))
+} footer: {
+  Footer(id: "footer", component: FooterComponent(viewModel: footer))
+}
+.contentInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+```
+
+전체 섹션 들여쓰기:
+
+```swift
+Section {
+  Row(id: "content", component: RowComponent(viewModel: content))
+} header: {
+  Header(id: "header", component: HeaderComponent(viewModel: header))
+}
+.sectionInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+```
+
+섹션 사이 간격:
+
+```swift
+Section {
+  Row(id: "first", component: RowComponent(viewModel: first))
+}
+.sectionSpacing(24)
+
+Section {
+  Row(id: "second", component: RowComponent(viewModel: second))
+}
+```
+
+`sectionSpacing`은 마지막 섹션에는 적용되지 않습니다. 화면 마지막 하단 여백이 필요하면 마지막 섹션의 `contentInsets.bottom`이나 `sectionInsets.bottom`을 사용하세요.
+
+### 6. Row 이벤트 받기
 
 ```swift
 Row(id: post.id, component: PostComponent(viewModel: .init(post: post)))
@@ -306,7 +408,7 @@ Cell(id: "cell", component: CellComponent(viewModel: model))
 | `cell` | 이벤트 대상 cell |
 | `contentView` | component가 렌더링한 UIKit view |
 
-### 5. 무한 스크롤 만들기
+### 7. 무한 스크롤 만들기
 
 `onReachEnd`는 `List` modifier입니다. builder overload 안에서 바로 붙이는 대신 `List { ... }`를 만들고 `adapter.apply(_:)`로 전달합니다.
 
@@ -506,6 +608,8 @@ struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
 Example/
   CarbonListKitExample.xcodeproj
   CarbonListKitExample/
+    App/
+    Examples/
 ```
 
 | 예제 | 설명 |
@@ -514,6 +618,8 @@ Example/
 | `Entity to ViewModel` | domain entity와 component ViewModel 분리, 업데이트 전략, layout modifier를 보여줍니다. |
 | `Infinite Scroll` | `onReachEnd`로 다음 페이지를 append합니다. |
 | `Prefetch` | collection view가 아이템을 prefetch할 때 이미지를 미리 로드하고 캐시에 저장합니다. prefetch된 이미지는 즉시 표시되어 부드러운 스크롤을 제공합니다. |
+| `Header & Footer` | 실제 supplementary header/footer, section spacing, grid와 함께 쓰는 예제를 보여줍니다. |
+| `Header & Footer DSL` | `Section { rows } header: { ... } footer: { ... }` 문법과 inset modifier 차이를 보여줍니다. |
 | `한글 종합 예제` | diff, ViewModel, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
 
 빌드:

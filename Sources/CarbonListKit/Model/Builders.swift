@@ -80,4 +80,49 @@ public enum RowsBuilder {
     components.flatMap { $0 }
   }
 }
+
+/// 섹션 header/footer를 구축하기 위한 결과 빌더입니다.
+/// SwiftUI의 `Section { ... } header: { ... } footer: { ... }` 형태를 지원합니다.
+@resultBuilder
+public enum SectionSupplementaryBuilder {
+  /// supplementary가 없는 블록을 처리합니다.
+  public static func buildBlock() -> SectionSupplementary? {
+    nil
+  }
+
+  /// 단일 supplementary를 반환합니다.
+  public static func buildBlock(_ component: SectionSupplementary) -> SectionSupplementary? {
+    component
+  }
+
+  /// optional supplementary를 반환합니다.
+  public static func buildBlock(_ component: SectionSupplementary?) -> SectionSupplementary? {
+    component
+  }
+
+  /// supplementary 표현식을 처리합니다.
+  public static func buildExpression(_ expression: SectionSupplementary) -> SectionSupplementary? {
+    expression
+  }
+
+  /// optional supplementary 표현식을 처리합니다.
+  public static func buildExpression(_ expression: SectionSupplementary?) -> SectionSupplementary? {
+    expression
+  }
+
+  /// optional supplementary를 처리합니다.
+  public static func buildOptional(_ component: SectionSupplementary?) -> SectionSupplementary? {
+    component
+  }
+
+  /// 첫 번째 분기를 선택합니다.
+  public static func buildEither(first component: SectionSupplementary?) -> SectionSupplementary? {
+    component
+  }
+
+  /// 두 번째 분기를 선택합니다.
+  public static func buildEither(second component: SectionSupplementary?) -> SectionSupplementary? {
+    component
+  }
+}
 #endif

@@ -15,6 +15,9 @@
 		8A6F6B1C2D3E4F5000000006 /* ArticleFeedExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */; };
 		8A6F6B1C2D3E4F5000000007 /* InfiniteScrollExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */; };
 		8A6F6B1C2D3E4F5000000008 /* KoreanCompleteExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */; };
+		8A6F6B1C2D3E4F5000000009 /* HeaderFooterExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */; };
+		8A6F6B1C2D3E4F500000000A /* HeaderFooterDSLExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */; };
+		DFADA1A92F9355AC00B2896F /* StudyVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFADA1A82F9355AC00B2896F /* StudyVC.swift */; };
 		DFE0ED0B2F934D3D00653226 /* PrefetchExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +30,9 @@
 		8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleFeedExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniteScrollExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanCompleteExampleViewController.swift; sourceTree = "<group>"; };
+		8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderFooterExampleViewController.swift; sourceTree = "<group>"; };
+		8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderFooterDSLExampleViewController.swift; sourceTree = "<group>"; };
+		DFADA1A82F9355AC00B2896F /* StudyVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyVC.swift; sourceTree = "<group>"; };
 		DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchExampleViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -53,16 +59,35 @@
 		8A6F6B1C2D3E4F5000000041 /* CarbonListKitExample */ = {
 			isa = PBXGroup;
 			children = (
-				DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */,
+				8A6F6B1C2D3E4F5000000043 /* App */,
+				8A6F6B1C2D3E4F5000000044 /* Examples */,
+			);
+			path = CarbonListKitExample;
+			sourceTree = "<group>";
+		};
+		8A6F6B1C2D3E4F5000000043 /* App */ = {
+			isa = PBXGroup;
+			children = (
 				8A6F6B1C2D3E4F5000000011 /* CarbonListKitExampleApp.swift */,
 				8A6F6B1C2D3E4F5000000012 /* ContentView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		8A6F6B1C2D3E4F5000000044 /* Examples */ = {
+			isa = PBXGroup;
+			children = (
+				DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */,
+				DFADA1A82F9355AC00B2896F /* StudyVC.swift */,
 				8A6F6B1C2D3E4F5000000014 /* ExampleListViewController.swift */,
 				8A6F6B1C2D3E4F5000000013 /* SampleListViewController.swift */,
 				8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */,
 				8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */,
+				8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */,
+				8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */,
 				8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */,
 			);
-			path = CarbonListKitExample;
+			path = Examples;
 			sourceTree = "<group>";
 		};
 		8A6F6B1C2D3E4F5000000042 /* Products */ = {
@@ -151,9 +176,12 @@
 				8A6F6B1C2D3E4F5000000002 /* ContentView.swift in Sources */,
 				DFE0ED0B2F934D3D00653226 /* PrefetchExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000005 /* ExampleListViewController.swift in Sources */,
+				DFADA1A92F9355AC00B2896F /* StudyVC.swift in Sources */,
 				8A6F6B1C2D3E4F5000000003 /* SampleListViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000006 /* ArticleFeedExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000007 /* InfiniteScrollExampleViewController.swift in Sources */,
+				8A6F6B1C2D3E4F5000000009 /* HeaderFooterExampleViewController.swift in Sources */,
+				8A6F6B1C2D3E4F500000000A /* HeaderFooterDSLExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000008 /* KoreanCompleteExampleViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

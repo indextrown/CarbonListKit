@@ -9,11 +9,15 @@ import Combine
 /// UICollectionView와 List 모델을 연결하여 데이터를 표시하고 업데이트합니다.
 /// 차등 업데이트를 지원하여 효율적인 UI 갱신을 제공합니다.
 public final class ListAdapter: NSObject {
+  private static let sectionSpacingElementKind = "CarbonListKit.SectionSpacing"
+  private static let sectionSpacingReuseIdentifier = "CarbonListKit.SectionSpacing"
+
   public private(set) var list = List(sections: [])
   public var configuration: ListAdapterConfiguration
 
   private weak var collectionView: UICollectionView?
-  private var registeredReuseIdentifiers = Set<String>()
+  private var registeredCellReuseIdentifiers = Set<String>()
+  private var registeredSupplementaryReuseIdentifiers = Set<String>()
   private var isUpdating = false
   private var queuedUpdate: (
     list: List,
@@ -42,6 +46,11 @@ public final class ListAdapter: NSObject {
     collectionView.dataSource = self
     collectionView.delegate = self
     collectionView.collectionViewLayout = makeCompositionalLayout()
+    collectionView.register(
+      UICollectionReusableView.self,
+      forSupplementaryViewOfKind: Self.sectionSpacingElementKind,
+      withReuseIdentifier: Self.sectionSpacingReuseIdentifier
+    )
 
     #if canImport(Combine)
     if prefetchingPlugins.isEmpty == false {
@@ -156,16 +165,61 @@ public final class ListAdapter: NSObject {
     return rows[indexPath.item]
   }
 
+  private func supplementary(
+    ofKind kind: String,
+    at indexPath: IndexPath
+  ) -> SectionSupplementary? {
+    guard list.sections.indices.contains(indexPath.section) else {
+      return nil
+    }
+
+    switch kind {
+    case UICollectionView.elementKindSectionHeader:
+      return list.sections[indexPath.section].header
+    case UICollectionView.elementKindSectionFooter:
+      return list.sections[indexPath.section].footer
+    default:
+      return nil
+    }
+  }
+
   private func registerComponents(in list: List) {
     for row in list.sections.flatMap(\.rows) {
       let reuseIdentifier = row.component.reuseIdentifier
-      guard registeredReuseIdentifiers.contains(reuseIdentifier) == false else {
+      guard registeredCellReuseIdentifiers.contains(reuseIdentifier) == false else {
         continue
       }
 
-      registeredReuseIdentifiers.insert(reuseIdentifier)
+      registeredCellReuseIdentifiers.insert(reuseIdentifier)
       collectionView?.register(ComponentCell.self, forCellWithReuseIdentifier: reuseIdentifier)
     }
+
+    for section in list.sections {
+      registerSupplementary(section.header, kind: UICollectionView.elementKindSectionHeader)
+      registerSupplementary(section.footer, kind: UICollectionView.elementKindSectionFooter)
+    }
+  }
+
+  private func registerSupplementary(
+    _ supplementary: SectionSupplementary?,
+    kind: String
+  ) {
+    guard let supplementary else {
+      return
+    }
+
+    let reuseIdentifier = supplementary.component.reuseIdentifier
+    let registrationKey = "\(kind):\(reuseIdentifier)"
+    guard registeredSupplementaryReuseIdentifiers.contains(registrationKey) == false else {
+      return
+    }
+
+    registeredSupplementaryReuseIdentifiers.insert(registrationKey)
+    collectionView?.register(
+      ComponentSupplementaryView.self,
+      forSupplementaryViewOfKind: kind,
+      withReuseIdentifier: reuseIdentifier
+    )
   }
 
   private func performDifferentialUpdates(
@@ -305,15 +359,22 @@ public final class ListAdapter: NSObject {
 
       let section = self.list.sections[sectionIndex]
       let layoutSection: NSCollectionLayoutSection
+      let layoutSectionContentInsets: NSDirectionalEdgeInsets
       switch section.layout {
       case .vertical(let spacing):
-        layoutSection = Self.makeVerticalSection(spacing: spacing)
+        layoutSection = Self.makeVerticalSection(
+          spacing: spacing,
+          horizontalInsets: section.horizontalContentInsets
+        )
+        layoutSectionContentInsets = section.sectionInsets.adding(section.verticalContentInsets)
       case .grid(let columns, let itemSpacing, let lineSpacing):
         layoutSection = Self.makeGridSection(
           columns: columns,
           itemSpacing: itemSpacing,
-          lineSpacing: lineSpacing
+          lineSpacing: lineSpacing,
+          horizontalInsets: section.horizontalContentInsets
         )
+        layoutSectionContentInsets = section.sectionInsets.adding(section.verticalContentInsets)
       case .custom(let provider):
         layoutSection = provider(
           .init(
@@ -322,14 +383,63 @@ public final class ListAdapter: NSObject {
             environment: environment
           )
         )
+        layoutSectionContentInsets = section.sectionInsets.adding(section.contentInsets)
       }
 
-      layoutSection.contentInsets = section.contentInsets
+      layoutSection.contentInsets = layoutSectionContentInsets
+      layoutSection.boundarySupplementaryItems += Self.makeBoundarySupplementaryItems(
+        for: section,
+        isLastSection: sectionIndex == self.list.sections.index(before: self.list.sections.endIndex)
+      )
       return layoutSection
     }
   }
 
-  private static func makeVerticalSection(spacing: CGFloat) -> NSCollectionLayoutSection {
+  private static func makeBoundarySupplementaryItems(
+    for section: Section,
+    isLastSection: Bool
+  ) -> [NSCollectionLayoutBoundarySupplementaryItem] {
+    var items = [NSCollectionLayoutBoundarySupplementaryItem]()
+    let sectionSpacing = isLastSection ? 0 : section.sectionSpacing
+
+    if let header = section.header {
+      items.append(
+        NSCollectionLayoutBoundarySupplementaryItem(
+          layoutSize: header.layoutSize.collectionLayoutSize,
+          elementKind: UICollectionView.elementKindSectionHeader,
+          alignment: .top
+        )
+      )
+    }
+
+    if let footer = section.footer {
+      items.append(
+        NSCollectionLayoutBoundarySupplementaryItem(
+          layoutSize: footer.layoutSize.addingHeight(sectionSpacing).collectionLayoutSize,
+          elementKind: UICollectionView.elementKindSectionFooter,
+          alignment: .bottom
+        )
+      )
+    } else if sectionSpacing > 0 {
+      items.append(
+        NSCollectionLayoutBoundarySupplementaryItem(
+          layoutSize: NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1),
+            heightDimension: .absolute(sectionSpacing)
+          ),
+          elementKind: Self.sectionSpacingElementKind,
+          alignment: .bottom
+        )
+      )
+    }
+
+    return items
+  }
+
+  private static func makeVerticalSection(
+    spacing: CGFloat,
+    horizontalInsets: NSDirectionalEdgeInsets = .zero
+  ) -> NSCollectionLayoutSection {
     let itemSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1),
       heightDimension: .estimated(44)
@@ -339,6 +449,8 @@ public final class ListAdapter: NSObject {
       layoutSize: itemSize,
       subitems: [item]
     )
+    group.contentInsets = horizontalInsets
+
     let section = NSCollectionLayoutSection(group: group)
     section.interGroupSpacing = spacing
     return section
@@ -347,15 +459,15 @@ public final class ListAdapter: NSObject {
   private static func makeGridSection(
     columns: Int,
     itemSpacing: CGFloat,
-    lineSpacing: CGFloat
+    lineSpacing: CGFloat,
+    horizontalInsets: NSDirectionalEdgeInsets = .zero
   ) -> NSCollectionLayoutSection {
     let columns = max(columns, 1)
     let itemSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0 / CGFloat(columns)),
+      widthDimension: .fractionalWidth(1),
       heightDimension: .estimated(44)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemSize)
-    item.contentInsets = .init(top: 0, leading: itemSpacing / 2, bottom: 0, trailing: itemSpacing / 2)
 
     let groupSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1),
@@ -363,11 +475,46 @@ public final class ListAdapter: NSObject {
     )
     let group = NSCollectionLayoutGroup.horizontal(
       layoutSize: groupSize,
-      subitems: [item]
+      subitem: item,
+      count: columns
     )
+    group.contentInsets = horizontalInsets
+    group.interItemSpacing = .fixed(itemSpacing)
+
     let section = NSCollectionLayoutSection(group: group)
     section.interGroupSpacing = lineSpacing
     return section
+  }
+}
+
+private extension Section {
+  var horizontalContentInsets: NSDirectionalEdgeInsets {
+    .init(
+      top: 0,
+      leading: contentInsets.leading,
+      bottom: 0,
+      trailing: contentInsets.trailing
+    )
+  }
+
+  var verticalContentInsets: NSDirectionalEdgeInsets {
+    .init(
+      top: contentInsets.top,
+      leading: 0,
+      bottom: contentInsets.bottom,
+      trailing: 0
+    )
+  }
+}
+
+private extension NSDirectionalEdgeInsets {
+  func adding(_ other: NSDirectionalEdgeInsets) -> NSDirectionalEdgeInsets {
+    .init(
+      top: top + other.top,
+      leading: leading + other.leading,
+      bottom: bottom + other.bottom,
+      trailing: trailing + other.trailing
+    )
   }
 }
 
@@ -404,6 +551,42 @@ extension ListAdapter: UICollectionViewDataSource {
 
     cell.render(component: row.component)
     return cell
+  }
+
+  public func collectionView(
+    _ collectionView: UICollectionView,
+    viewForSupplementaryElementOfKind kind: String,
+    at indexPath: IndexPath
+  ) -> UICollectionReusableView {
+    if kind == Self.sectionSpacingElementKind {
+      return collectionView.dequeueReusableSupplementaryView(
+        ofKind: kind,
+        withReuseIdentifier: Self.sectionSpacingReuseIdentifier,
+        for: indexPath
+      )
+    }
+
+    guard let supplementary = supplementary(ofKind: kind, at: indexPath) else {
+      return UICollectionReusableView()
+    }
+
+    guard let view = collectionView.dequeueReusableSupplementaryView(
+      ofKind: kind,
+      withReuseIdentifier: supplementary.component.reuseIdentifier,
+      for: indexPath
+    ) as? ComponentSupplementaryView else {
+      return UICollectionReusableView()
+    }
+
+    if kind == UICollectionView.elementKindSectionFooter,
+       list.sections.indices.contains(indexPath.section),
+       indexPath.section != list.sections.index(before: list.sections.endIndex) {
+      view.bottomSpacing = list.sections[indexPath.section].sectionSpacing
+    } else {
+      view.bottomSpacing = 0
+    }
+    view.render(component: supplementary.component)
+    return view
   }
 }
 

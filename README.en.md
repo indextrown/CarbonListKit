@@ -15,18 +15,25 @@ It removes repeated collection view boilerplate from view controllers:
 - compositional layout setup
 - list reach-end events
 
-CarbonListKit is still early. The current implementation focuses on the core list adapter and example app. Supplementary views, refresh, prefetching, and size caching are planned next.
+CarbonListKit is still early. The current implementation focuses on the core list adapter, supplementary header/footer support, prefetching, and the example app. Refresh wrappers, orthogonal scrolling, size caching, and DocC documentation are planned next.
 
 ## Requirements
 
-- iOS 13+
-- Swift 5.9+
-- UIKit
-- Swift Package Manager
+| Item | Value |
+| --- | --- |
+| Platform | iOS 13+ |
+| Language | Swift 5.9+ |
+| UI framework | UIKit |
+| Package manager | Swift Package Manager |
+| Diff engine | DifferenceKit |
 
 ## Installation
 
-Add CarbonListKit as a local or remote Swift Package dependency.
+Add CarbonListKit as a Swift Package dependency.
+
+```swift
+.package(url: "https://github.com/indextrown/CarbonListKit", branch: "1.0.0")
+```
 
 For local development, the example app uses a local package reference:
 
@@ -137,7 +144,7 @@ adapter.apply {
 
 ### Section
 
-`Section` groups rows and owns section-level layout.
+`Section` groups rows and owns section-level layout, insets, spacing, and supplementary header/footer views.
 
 ```swift
 Section(id: "articles") {
@@ -154,6 +161,8 @@ Section(id: "articles") {
 .contentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
 ```
 
+`contentInsets` applies to the row content area. Header and footer supplementary views keep the full section width.
+
 Compatibility-style modifiers are also available:
 
 ```swift
@@ -162,6 +171,82 @@ Section(id: "articles") {
 }
 .withSectionLayout(.vertical(spacing: 10))
 .withSectionContentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
+```
+
+Use `sectionInsets` when you want header, footer, and rows to move together.
+
+```swift
+Section(id: "articles") {
+  // rows
+}
+.sectionInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+```
+
+Use `sectionSpacing` for the distance between the current section and the next section.
+
+```swift
+Section(id: "first") {
+  Row(id: "row", component: RowComponent(viewModel: model))
+}
+.sectionSpacing(24)
+
+Section(id: "second") {
+  Row(id: "row", component: RowComponent(viewModel: model))
+}
+```
+
+`sectionSpacing` is not applied to the last section. If the last section needs bottom padding, use `contentInsets.bottom` or `sectionInsets.bottom`.
+
+Inset modifiers have different meanings:
+
+| Modifier | Applies to | Use when |
+| --- | --- | --- |
+| `.contentInsets(...)` | row content area | Keep header/footer full-width and inset only rows |
+| `.sectionInsets(...)` | header/footer + rows | Inset the whole section together, like a card |
+| `.sectionSpacing(...)` | between the current section and the next section | Add section-to-section spacing |
+
+### Header and Footer
+
+`Header` and `Footer` are real collection view supplementary views, not rows. They use the same `ListComponent` protocol as row components.
+
+```swift
+Section(id: "profile") {
+  Row(id: "name", component: ProfileRowComponent(viewModel: name))
+  Row(id: "email", component: ProfileRowComponent(viewModel: email))
+} header: {
+  Header(
+    id: "profile-header",
+    component: TitleComponent(viewModel: .init(title: "Profile"))
+  )
+} footer: {
+  Footer(
+    id: "profile-footer",
+    component: CaptionComponent(viewModel: .init(text: "You can change account details anytime."))
+  )
+}
+.layout(.vertical(spacing: 10))
+```
+
+The initializer style is still supported:
+
+```swift
+Section(
+  id: "profile",
+  header: Header(id: "profile-header", component: TitleComponent(viewModel: title)),
+  footer: Footer(id: "profile-footer", component: CaptionComponent(viewModel: caption))
+) {
+  Row(id: "name", component: ProfileRowComponent(viewModel: name))
+}
+```
+
+Specify `layoutSize` when a header or footer needs a custom estimated or fixed height.
+
+```swift
+Footer(
+  id: "loading-footer",
+  component: LoadingComponent(viewModel: .init(title: "Loading more")),
+  layoutSize: .estimated(height: 72)
+)
 ```
 
 ### Row
@@ -347,6 +432,8 @@ Section(id: "metrics") {
 .layout(.grid(columns: 2, itemSpacing: 10, lineSpacing: 10))
 .contentInsets(.init(top: 0, leading: 16, bottom: 16, trailing: 16))
 ```
+
+In grid layouts, `itemSpacing` controls only the horizontal space between items. Outer section padding should be expressed with `contentInsets` or `sectionInsets`.
 
 ### Custom
 
@@ -542,6 +629,8 @@ The repository includes a SwiftUI based example app:
 Example/
   CarbonListKitExample.xcodeproj
   CarbonListKitExample/
+    App/
+    Examples/
 ```
 
 The SwiftUI app hosts UIKit view controllers through `UIViewControllerRepresentable`.
@@ -551,6 +640,10 @@ Examples:
 - `Diff updates`: add, shuffle, and update rows
 - `Entity to ViewModel`: maps domain entities into component view models and shows available modifiers/layouts
 - `Infinite Scroll`: appends the next page when the list reaches the end
+- `Prefetch`: prefetches images through collection view prefetching and stores them in cache
+- `Header & Footer`: demonstrates real supplementary header/footer views, section spacing, and grid usage
+- `Header & Footer DSL`: demonstrates `Section { rows } header: { ... } footer: { ... }` and inset modifier differences
+- `한글 종합 예제`: shows diffing, ViewModel mapping, events, layouts, and infinite scrolling in one screen
 
 Build:
 
@@ -592,6 +685,12 @@ Implemented:
 - custom layout
 - custom layout context
 - section content insets
+- section insets
+- section spacing
+- supplementary views
+  - header
+  - footer
+- SwiftUI-style section header/footer DSL
 - row selection event
 - row display events
 - list reach-end events
@@ -604,12 +703,8 @@ Implemented:
 
 Planned:
 
-- supplementary views
-  - header
-  - footer
 - horizontal orthogonal sections
 - refresh control
-- prefetch events
 - size cache
 - more tests
 - DocC

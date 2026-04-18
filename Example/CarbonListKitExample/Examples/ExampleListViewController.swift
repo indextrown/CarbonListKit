@@ -96,6 +96,36 @@ final class ExampleListViewController: UIViewController {
         }
 
         Row(
+          id: "header-footer",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "Header & Footer",
+              subtitle: "Render section supplementary views with the same component model.",
+              badge: "Layout",
+              tintColor: .systemTeal
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(HeaderFooterExampleViewController(), animated: true)
+        }
+
+        Row(
+          id: "header-footer-dsl",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "Header & Footer DSL",
+              subtitle: "Write rows first, then attach header and footer trailing closures.",
+              badge: "DSL",
+              tintColor: .systemIndigo
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(HeaderFooterDSLExampleViewController(), animated: true)
+        }
+
+        Row(
           id: "korean-complete",
           component: ExampleMenuComponent(
             viewModel: .init(
@@ -108,6 +138,25 @@ final class ExampleListViewController: UIViewController {
         )
         .onSelect { [weak self] _ in
           self?.navigationController?.pushViewController(KoreanCompleteExampleViewController(), animated: true)
+        }
+        
+        Row(
+          id: "practice",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "컴포넌트 예제",
+              subtitle: "컴포넌트 구현 예제입니다.",
+              badge: "Component",
+              tintColor: .systemMint
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?
+            .pushViewController(
+              StudyVC(),
+              animated: true
+            )
         }
       }
       .layout(.vertical(spacing: 10))
