@@ -669,3 +669,70 @@ CarbonListKit은 KarrotListKit, IGListKit, Airbnb Epoxy, DifferenceKit 같은 co
 | supplementary size cache | `sectionID + supplementaryID + kind + component type + width + bottomSpacing` 기준으로 header/footer 높이를 캐시합니다. | header/footer self-sizing 비용을 줄이고 section spacing 변화도 안전하게 구분합니다. |
 | prefetch 관리 | prefetch 작업을 `IndexPath`가 아니라 `Row.id` 기준으로 저장하고, list 적용 시 사라진 row 작업을 cancel합니다. | diff update/row 이동 후에도 prefetch 작업이 더 안정적으로 관리됩니다. |
 | header/footer 업데이트 | header/footer 내용만 바뀐 section은 section reload 대신 visible supplementary view만 re-render합니다. | row reload 범위를 줄이고 header/footer만 자주 바뀌는 화면에서 업데이트 비용을 낮춥니다. |
+
+## 전체 아키텍처
+
+```mermaid
+graph TD
+  App["App / ViewController"] --> Adapter["ListAdapter"]
+  App --> ListDSL["List DSL"]
+
+  ListDSL --> List["List"]
+  List --> Section["Section"]
+  Section --> Row["Row / Cell"]
+  Section --> Header["Header"]
+  Section --> Footer["Footer"]
+
+  Row --> AnyComponent["AnyListComponent"]
+  Header --> AnyComponent
+  Footer --> AnyComponent
+  AnyComponent --> Component["ListComponent"]
+  Component --> View["UIView"]
+  Component --> Coordinator["Coordinator"]
+
+  Adapter --> CollectionView["UICollectionView"]
+  Adapter --> DataSource["DataSource"]
+  Adapter --> Delegate["Delegate"]
+  Adapter --> Layout["Compositional Layout"]
+  Adapter --> Diff["DifferenceKit"]
+  Adapter --> SizeCache["Cell / Supplementary Size Cache"]
+  Adapter --> Prefetch["Prefetch Plugins"]
+
+  Layout --> Vertical["Vertical Layout"]
+  Layout --> Grid["Grid Layout"]
+  Layout --> Custom["Custom Layout"]
+  Prefetch --> RemoteImage["Remote Image Prefetching"]
+```
+
+## 액션 처리 흐름
+
+```mermaid
+sequenceDiagram
+  participant App as App / ViewController
+  participant Adapter as ListAdapter
+  participant Diff as DifferenceKit
+  participant CV as UICollectionView
+  participant Cell as Cell / Supplementary View
+  participant Component as ListComponent
+  participant Event as Event Handlers
+
+  App->>Adapter: apply(newList, strategy)
+  Adapter->>Adapter: 진행 중 업데이트 확인 및 queue 처리
+  Adapter->>Adapter: component / supplementary 등록
+  Adapter->>Diff: previousList와 newList 비교
+  Diff-->>Adapter: 변경 세트 반환
+
+  alt 변경이 많거나 reload 전략
+    Adapter->>CV: reloadData()
+    Adapter->>CV: 필요 시 layoutIfNeeded()
+  else animated diff 적용
+    Adapter->>CV: performBatchUpdates()
+  end
+
+  CV->>Adapter: cell / supplementary 요청
+  Adapter->>Cell: component와 context 전달
+  Cell->>Component: makeView 또는 재사용 view 준비
+  Cell->>Component: updateView()
+  Component-->>Cell: UIView 상태 반영
+  Adapter->>Event: onSelect / onDisplay / onReachEnd 호출
+```

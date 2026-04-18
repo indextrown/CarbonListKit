@@ -746,3 +746,70 @@ CarbonListKit takes inspiration from component-based list frameworks such as Kar
 | Supplementary size cache | Caches header/footer heights by `sectionID + supplementaryID + kind + component type + width + bottomSpacing`. | Reduces supplementary self-sizing work while safely distinguishing section spacing changes. |
 | Prefetch management | Stores prefetch operations by `Row.id` instead of `IndexPath`, and cancels operations for rows removed by a list apply. | Keeps prefetch work more stable across diff updates and row moves. |
 | Header/footer updates | Re-renders visible supplementary views when only header/footer content changes, instead of reloading the entire section. | Reduces row reload work for screens where headers or footers change frequently. |
+
+## Overall Architecture
+
+```mermaid
+graph TD
+  App["App / ViewController"] --> Adapter["ListAdapter"]
+  App --> ListDSL["List DSL"]
+
+  ListDSL --> List["List"]
+  List --> Section["Section"]
+  Section --> Row["Row / Cell"]
+  Section --> Header["Header"]
+  Section --> Footer["Footer"]
+
+  Row --> AnyComponent["AnyListComponent"]
+  Header --> AnyComponent
+  Footer --> AnyComponent
+  AnyComponent --> Component["ListComponent"]
+  Component --> View["UIView"]
+  Component --> Coordinator["Coordinator"]
+
+  Adapter --> CollectionView["UICollectionView"]
+  Adapter --> DataSource["DataSource"]
+  Adapter --> Delegate["Delegate"]
+  Adapter --> Layout["Compositional Layout"]
+  Adapter --> Diff["DifferenceKit"]
+  Adapter --> SizeCache["Cell / Supplementary Size Cache"]
+  Adapter --> Prefetch["Prefetch Plugins"]
+
+  Layout --> Vertical["Vertical Layout"]
+  Layout --> Grid["Grid Layout"]
+  Layout --> Custom["Custom Layout"]
+  Prefetch --> RemoteImage["Remote Image Prefetching"]
+```
+
+## Action Flow
+
+```mermaid
+sequenceDiagram
+  participant App as App / ViewController
+  participant Adapter as ListAdapter
+  participant Diff as DifferenceKit
+  participant CV as UICollectionView
+  participant Cell as Cell / Supplementary View
+  participant Component as ListComponent
+  participant Event as Event Handlers
+
+  App->>Adapter: apply(newList, strategy)
+  Adapter->>Adapter: Check in-flight updates and queue if needed
+  Adapter->>Adapter: Register components and supplementary views
+  Adapter->>Diff: Compare previousList with newList
+  Diff-->>Adapter: Return staged changeset
+
+  alt Large change set or reload strategy
+    Adapter->>CV: reloadData()
+    Adapter->>CV: layoutIfNeeded() when configured
+  else Animated diff
+    Adapter->>CV: performBatchUpdates()
+  end
+
+  CV->>Adapter: Request cell / supplementary view
+  Adapter->>Cell: Pass component and context
+  Cell->>Component: makeView or prepare reused view
+  Cell->>Component: updateView()
+  Component-->>Cell: Apply UIView state
+  Adapter->>Event: Call onSelect / onDisplay / onReachEnd
+```
