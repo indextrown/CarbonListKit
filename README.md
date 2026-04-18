@@ -21,7 +21,7 @@ CarbonListKit은 선언형 `List`, `Section`, `Row`, `Component`로 `UICollectio
 Swift Package dependency로 추가합니다.
 
 ```swift
-.package(url: "<repository-url>", branch: "main")
+.package(url: "https://github.com/indextrown/CarbonListKit", branch: "1.0.0")
 ```
 
 로컬 개발에서는 예제 앱이 루트 패키지를 직접 참조합니다.
