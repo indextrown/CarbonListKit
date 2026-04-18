@@ -102,7 +102,7 @@ final class HeaderFooterDSLExampleViewController: UIViewController {
         )
       }
       .layout(.grid(columns: 2, itemSpacing: 12, lineSpacing: 10))
-      .sectionInsets(.init(top: 0, leading: 16, bottom: 24, trailing: 16))
+      .sectionInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
     }
   }
 }

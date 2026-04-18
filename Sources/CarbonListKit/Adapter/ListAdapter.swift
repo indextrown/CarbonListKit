@@ -18,6 +18,8 @@ public final class ListAdapter: NSObject {
   private weak var collectionView: UICollectionView?
   private var registeredCellReuseIdentifiers = Set<String>()
   private var registeredSupplementaryReuseIdentifiers = Set<String>()
+  private var cellSizeCache = [ComponentCell.SizeCacheKey: ComponentCell.SizeCacheEntry]()
+  private var supplementarySizeCache = [ComponentSupplementaryView.SizeCacheKey: ComponentSupplementaryView.SizeCacheEntry]()
   private var isUpdating = false
   private var queuedUpdate: (
     list: List,
@@ -25,7 +27,7 @@ public final class ListAdapter: NSObject {
     completion: (() -> Void)?
   )?
 
-  private(set) var prefetchingIndexPathOperations = [IndexPath: [AnyCancellable]]()
+  private(set) var prefetchingRowIDOperations = [AnyHashable: [AnyCancellable]]()
   private let prefetchingPlugins: [CollectionViewPrefetchingPlugin]
 
   /// ListAdapter를 초기화합니다.
@@ -80,6 +82,8 @@ public final class ListAdapter: NSObject {
 
     isUpdating = true
     registerComponents(in: list)
+    pruneSizeCache(for: list)
+    prunePrefetchingOperations(for: list)
 
     let finishUpdate: () -> Void = { [weak self] in
       guard let self else {
@@ -104,7 +108,7 @@ public final class ListAdapter: NSObject {
     guard self.list.sections.isEmpty == false else {
       self.list = list
       collectionView.reloadData()
-      collectionView.layoutIfNeeded()
+      layoutIfNeededAfterReload(on: collectionView)
       finishUpdate()
       return
     }
@@ -124,7 +128,7 @@ public final class ListAdapter: NSObject {
     case .reloadData:
       self.list = list
       collectionView.reloadData()
-      collectionView.layoutIfNeeded()
+      layoutIfNeededAfterReload(on: collectionView)
       finishUpdate()
     }
   }
@@ -184,17 +188,17 @@ public final class ListAdapter: NSObject {
   }
 
   private func registerComponents(in list: List) {
-    for row in list.sections.flatMap(\.rows) {
-      let reuseIdentifier = row.component.reuseIdentifier
-      guard registeredCellReuseIdentifiers.contains(reuseIdentifier) == false else {
-        continue
+    for section in list.sections {
+      for row in section.rows {
+        let reuseIdentifier = row.component.reuseIdentifier
+        guard registeredCellReuseIdentifiers.contains(reuseIdentifier) == false else {
+          continue
+        }
+
+        registeredCellReuseIdentifiers.insert(reuseIdentifier)
+        collectionView?.register(ComponentCell.self, forCellWithReuseIdentifier: reuseIdentifier)
       }
 
-      registeredCellReuseIdentifiers.insert(reuseIdentifier)
-      collectionView?.register(ComponentCell.self, forCellWithReuseIdentifier: reuseIdentifier)
-    }
-
-    for section in list.sections {
       registerSupplementary(section.header, kind: UICollectionView.elementKindSectionHeader)
       registerSupplementary(section.footer, kind: UICollectionView.elementKindSectionFooter)
     }
@@ -222,6 +226,60 @@ public final class ListAdapter: NSObject {
     )
   }
 
+  private func layoutIfNeededAfterReload(on collectionView: UICollectionView) {
+    guard configuration.performsLayoutAfterReload else {
+      return
+    }
+
+    collectionView.layoutIfNeeded()
+  }
+
+  private func pruneSizeCache(for list: List) {
+    guard configuration.isSizeCachingEnabled else {
+      cellSizeCache.removeAll()
+      supplementarySizeCache.removeAll()
+      return
+    }
+
+    var rowIDs = Set<AnyHashable>()
+    for section in list.sections {
+      for row in section.rows {
+        rowIDs.insert(row.id)
+      }
+    }
+    cellSizeCache = cellSizeCache.filter { rowIDs.contains($0.key.rowID) }
+
+    var supplementaryIDs = Set<AnyHashable>()
+    for section in list.sections {
+      if let header = section.header {
+        supplementaryIDs.insert(header.id)
+      }
+      if let footer = section.footer {
+        supplementaryIDs.insert(footer.id)
+      }
+    }
+    supplementarySizeCache = supplementarySizeCache.filter {
+      supplementaryIDs.contains($0.key.supplementaryID)
+    }
+  }
+
+  private func prunePrefetchingOperations(for list: List) {
+    #if canImport(Combine)
+    var rowIDs = Set<AnyHashable>()
+    for section in list.sections {
+      for row in section.rows {
+        rowIDs.insert(row.id)
+      }
+    }
+
+    for rowID in prefetchingRowIDOperations.keys where rowIDs.contains(rowID) == false {
+      prefetchingRowIDOperations.removeValue(forKey: rowID)?.forEach {
+        $0.cancel()
+      }
+    }
+    #endif
+  }
+
   private func performDifferentialUpdates(
     newList: List,
     completion: @escaping () -> Void
@@ -246,7 +304,7 @@ public final class ListAdapter: NSObject {
     if collectionView.window == nil {
       self.list = newList
       collectionView.reloadData()
-      collectionView.layoutIfNeeded()
+      layoutIfNeededAfterReload(on: collectionView)
       completion()
       return
     }
@@ -254,7 +312,7 @@ public final class ListAdapter: NSObject {
     if stagedChanges.contains(where: { $0.changeCount > configuration.batchUpdateInterruptCount }) {
       self.list = newList
       collectionView.reloadData()
-      collectionView.layoutIfNeeded()
+      layoutIfNeededAfterReload(on: collectionView)
       completion()
       return
     }
@@ -281,6 +339,11 @@ public final class ListAdapter: NSObject {
     }
 
     let changeset = stagedChanges[index]
+    let supplementaryOnlyUpdatedSections = supplementaryOnlyUpdatedSections(in: changeset)
+    let reloadUpdatedSections = changeset.sectionUpdated.filter {
+      supplementaryOnlyUpdatedSections.contains($0) == false
+    }
+
     collectionView.performBatchUpdates {
       list.sections = changeset.data
 
@@ -292,8 +355,8 @@ public final class ListAdapter: NSObject {
         collectionView.insertSections(IndexSet(changeset.sectionInserted))
       }
 
-      if changeset.sectionUpdated.isEmpty == false {
-        collectionView.reloadSections(IndexSet(changeset.sectionUpdated))
+      if reloadUpdatedSections.isEmpty == false {
+        collectionView.reloadSections(IndexSet(reloadUpdatedSections))
       }
 
       for (source, target) in changeset.sectionMoved {
@@ -325,11 +388,59 @@ public final class ListAdapter: NSObject {
         )
       }
     } completion: { [weak self] _ in
+      self?.reconfigureVisibleSupplementaryViews(in: supplementaryOnlyUpdatedSections)
       self?.apply(
         stagedChanges: stagedChanges,
         at: index + 1,
         completion: completion
       )
+    }
+  }
+
+  private func supplementaryOnlyUpdatedSections(
+    in changeset: Changeset<[Section]>
+  ) -> Set<Int> {
+    Set(
+      changeset.sectionUpdated.filter { sectionIndex in
+        guard list.sections.indices.contains(sectionIndex),
+              changeset.data.indices.contains(sectionIndex) else {
+          return false
+        }
+
+        return canReconfigureSupplementaryOnly(
+          source: list.sections[sectionIndex],
+          target: changeset.data[sectionIndex]
+        )
+      }
+    )
+  }
+
+  private func canReconfigureSupplementaryOnly(
+    source: Section,
+    target: Section
+  ) -> Bool {
+    source.id == target.id
+      && source.rows == target.rows
+      && source.layout == target.layout
+      && source.contentInsets.isEqual(to: target.contentInsets)
+      && source.sectionInsets.isEqual(to: target.sectionInsets)
+      && source.sectionSpacing == target.sectionSpacing
+      && canReconfigureSupplementaryOnly(source: source.header, target: target.header)
+      && canReconfigureSupplementaryOnly(source: source.footer, target: target.footer)
+  }
+
+  private func canReconfigureSupplementaryOnly(
+    source: SectionSupplementary?,
+    target: SectionSupplementary?
+  ) -> Bool {
+    switch (source, target) {
+    case (.none, .none):
+      return true
+    case (.some(let source), .some(let target)):
+      return source.id == target.id
+        && source.layoutSize == target.layoutSize
+    default:
+      return false
     }
   }
 
@@ -346,8 +457,131 @@ public final class ListAdapter: NSObject {
       }
 
       cell.render(component: row.component)
+      configure(cell, for: row)
       cell.setNeedsLayout()
     }
+  }
+
+  private func reconfigureVisibleSupplementaryViews(in sectionIndexes: Set<Int>) {
+    guard let collectionView,
+          sectionIndexes.isEmpty == false else {
+      return
+    }
+
+    let didReconfigureHeader = reconfigureVisibleSupplementaryViews(
+      ofKind: UICollectionView.elementKindSectionHeader,
+      in: sectionIndexes,
+      collectionView: collectionView
+    )
+    let didReconfigureFooter = reconfigureVisibleSupplementaryViews(
+      ofKind: UICollectionView.elementKindSectionFooter,
+      in: sectionIndexes,
+      collectionView: collectionView
+    )
+
+    if didReconfigureHeader || didReconfigureFooter {
+      collectionView.collectionViewLayout.invalidateLayout()
+    }
+  }
+
+  private func reconfigureVisibleSupplementaryViews(
+    ofKind kind: String,
+    in sectionIndexes: Set<Int>,
+    collectionView: UICollectionView
+  ) -> Bool {
+    var didReconfigure = false
+
+    for indexPath in collectionView.indexPathsForVisibleSupplementaryElements(ofKind: kind) {
+      guard sectionIndexes.contains(indexPath.section),
+            let supplementary = supplementary(ofKind: kind, at: indexPath),
+            let view = collectionView.supplementaryView(
+              forElementKind: kind,
+              at: indexPath
+            ) as? ComponentSupplementaryView else {
+        continue
+      }
+
+      configure(
+        view,
+        for: supplementary,
+        kind: kind,
+        at: indexPath
+      )
+      view.render(component: supplementary.component)
+      view.setNeedsLayout()
+      didReconfigure = true
+    }
+
+    return didReconfigure
+  }
+
+  private func configure(
+    _ cell: ComponentCell,
+    for row: Row
+  ) {
+    guard configuration.isSizeCachingEnabled else {
+      cell.configureSizeCaching(rowID: row.id, reader: nil, writer: nil)
+      return
+    }
+
+    cell.configureSizeCaching(
+      rowID: row.id,
+      reader: { [weak self] key in
+        self?.cellSizeCache[key]
+      },
+      writer: { [weak self] key, entry in
+        self?.cellSizeCache[key] = entry
+      }
+    )
+  }
+
+  private func configure(
+    _ view: ComponentSupplementaryView,
+    for supplementary: SectionSupplementary,
+    kind: String,
+    at indexPath: IndexPath
+  ) {
+    if kind == UICollectionView.elementKindSectionFooter,
+       list.sections.indices.contains(indexPath.section),
+       indexPath.section != list.sections.index(before: list.sections.endIndex) {
+      view.bottomSpacing = list.sections[indexPath.section].sectionSpacing
+    } else {
+      view.bottomSpacing = 0
+    }
+
+    guard list.sections.indices.contains(indexPath.section) else {
+      view.configureSizeCaching(
+        sectionID: AnyHashable(indexPath.section),
+        supplementaryID: supplementary.id,
+        kind: kind,
+        reader: nil,
+        writer: nil
+      )
+      return
+    }
+
+    guard configuration.isSizeCachingEnabled else {
+      view.configureSizeCaching(
+        sectionID: list.sections[indexPath.section].id,
+        supplementaryID: supplementary.id,
+        kind: kind,
+        reader: nil,
+        writer: nil
+      )
+      return
+    }
+
+    view.configureSizeCaching(
+      sectionID: list.sections[indexPath.section].id,
+      supplementaryID: supplementary.id,
+      kind: kind,
+      reader: { [weak self] key in
+        self?.supplementarySizeCache[key]
+      },
+      writer: { [weak self] key, entry in
+        self?.supplementarySizeCache[key] = entry
+      }
+    )
   }
 
   private func makeCompositionalLayout() -> UICollectionViewCompositionalLayout {
@@ -516,6 +750,13 @@ private extension NSDirectionalEdgeInsets {
       trailing: trailing + other.trailing
     )
   }
+
+  func isEqual(to other: NSDirectionalEdgeInsets) -> Bool {
+    top == other.top
+      && leading == other.leading
+      && bottom == other.bottom
+      && trailing == other.trailing
+  }
 }
 
 extension ListAdapter: UICollectionViewDataSource {
@@ -550,6 +791,7 @@ extension ListAdapter: UICollectionViewDataSource {
     }
 
     cell.render(component: row.component)
+    configure(cell, for: row)
     return cell
   }
 
@@ -578,13 +820,12 @@ extension ListAdapter: UICollectionViewDataSource {
       return UICollectionReusableView()
     }
 
-    if kind == UICollectionView.elementKindSectionFooter,
-       list.sections.indices.contains(indexPath.section),
-       indexPath.section != list.sections.index(before: list.sections.endIndex) {
-      view.bottomSpacing = list.sections[indexPath.section].sectionSpacing
-    } else {
-      view.bottomSpacing = 0
-    }
+    configure(
+      view,
+      for: supplementary,
+      kind: kind,
+      at: indexPath
+    )
     view.render(component: supplementary.component)
     return view
   }
@@ -721,16 +962,16 @@ extension ListAdapter: UICollectionViewDataSourcePrefetching {
     prefetchItemsAt indexPaths: [IndexPath]
   ) {
     for indexPath in indexPaths {
-      guard prefetchingIndexPathOperations[indexPath] == nil else {
-        continue
-      }
-
       guard let row = row(at: indexPath),
             let prefetchableComponent = row.component as? ComponentResourcePrefetchable else {
         continue
       }
 
-      prefetchingIndexPathOperations[indexPath] = prefetchingPlugins.compactMap {
+      guard prefetchingRowIDOperations[row.id] == nil else {
+        continue
+      }
+
+      prefetchingRowIDOperations[row.id] = prefetchingPlugins.compactMap {
         $0.prefetch(with: prefetchableComponent)
       }
     }
@@ -741,7 +982,11 @@ extension ListAdapter: UICollectionViewDataSourcePrefetching {
     cancelPrefetchingForItemsAt indexPaths: [IndexPath]
   ) {
     for indexPath in indexPaths {
-      prefetchingIndexPathOperations.removeValue(forKey: indexPath)?.forEach {
+      guard let row = row(at: indexPath) else {
+        continue
+      }
+
+      prefetchingRowIDOperations.removeValue(forKey: row.id)?.forEach {
         $0.cancel()
       }
     }

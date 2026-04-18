@@ -666,7 +666,6 @@ Implemented:
 - `Section`
 - `Row`
 - `Cell` typealias
-- compatibility-style modifiers
 - `ListComponent`
 - `AnyListComponent`
 - `ListComponentContext`
@@ -684,9 +683,6 @@ Implemented:
 - grid layout
 - custom layout
 - custom layout context
-- section content insets
-- section insets
-- section spacing
 - supplementary views
   - header
   - footer
@@ -701,11 +697,27 @@ Implemented:
 - last-write-wins queued updates
 - SwiftUI example app with UIKit controllers
 
+## Modifier Summary
+
+| Scope | Modifier | Description |
+| --- | --- | --- |
+| `Section` | `.layout(.vertical(spacing:))` | Applies a vertical list layout and sets the spacing between rows. |
+| `Section` | `.layout(.grid(columns:itemSpacing:lineSpacing:))` | Applies a grid layout. `itemSpacing` is horizontal spacing between items, and `lineSpacing` is vertical spacing between rows. |
+| `Section` | `.layout(.custom { context in ... })` | Applies a custom `NSCollectionLayoutSection`. |
+| `Section` | `.contentInsets(...)` | Applies insets only to the row content area while keeping header/footer full-width. |
+| `Section` | `.sectionInsets(...)` | Applies insets to the whole section, including header/footer and rows. |
+| `Section` | `.sectionSpacing(...)` | Sets the distance between the current section and the next section. It is not applied to the last section. |
+| `Section` | `.header(...)`, `.footer(...)` | Sets header/footer with modifier-style APIs instead of initializer parameters. |
+| `Section` | `.withSectionLayout(...)`, `.withSectionContentInsets(...)`, `.withSectionInsets(...)`, `.withSectionSpacing(...)` | Compatibility-style modifier names for users familiar with other list DSLs. |
+| `Row` / `Cell` | `.onSelect(...)`, `.didSelect(...)` | Receives row selection events. |
+| `Row` / `Cell` | `.onDisplay(...)`, `.willDisplay(...)` | Receives row display-start events. |
+| `Row` | `.onEndDisplay(...)` | Receives row display-end events. |
+| `List` | `.onReachEnd(offsetFromEnd:_:)` | Receives collection view reach-end events. |
+
 Planned:
 
 - horizontal orthogonal sections
 - refresh control
-- size cache
 - more tests
 - DocC
 
@@ -723,3 +735,14 @@ xcodebuild -project Example/CarbonListKitExample.xcodeproj -scheme CarbonListKit
 ## Inspiration
 
 CarbonListKit takes inspiration from component-based list frameworks such as KarrotListKit, IGListKit, Airbnb Epoxy, and DifferenceKit.
+
+## Performance Improvement History
+
+| Area | Improvement | Expected effect |
+| --- | --- | --- |
+| Component registration | Iterates sections and rows directly during `apply` instead of flattening rows with `flatMap`. | Reduces unnecessary intermediate array allocations in large lists. |
+| Layout after reload | `ListAdapterConfiguration.performsLayoutAfterReload` controls whether `layoutIfNeeded()` is forced after `reloadData`. | Can reduce immediate layout work during initial loads and large reloads. |
+| Cell size cache | Caches self-sizing cell heights by `Row.id + component type + width`. Cached heights are reused only when the stored component equals the current component. | Reduces repeated Auto Layout measurement during scrolling. |
+| Supplementary size cache | Caches header/footer heights by `sectionID + supplementaryID + kind + component type + width + bottomSpacing`. | Reduces supplementary self-sizing work while safely distinguishing section spacing changes. |
+| Prefetch management | Stores prefetch operations by `Row.id` instead of `IndexPath`, and cancels operations for rows removed by a list apply. | Keeps prefetch work more stable across diff updates and row moves. |
+| Header/footer updates | Re-renders visible supplementary views when only header/footer content changes, instead of reloading the entire section. | Reduces row reload work for screens where headers or footers change frequently. |

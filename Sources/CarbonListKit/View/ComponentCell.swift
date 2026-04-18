@@ -4,9 +4,23 @@ import UIKit
 /// 리스트 컴포넌트를 렌더링하는 컬렉션 뷰 셀입니다.
 /// 컴포넌트의 뷰를 생성하고 관리합니다.
 final class ComponentCell: UICollectionViewCell {
+  struct SizeCacheKey: Hashable {
+    let rowID: AnyHashable
+    let componentTypeID: ObjectIdentifier
+    let width: Int
+  }
+
+  struct SizeCacheEntry {
+    let component: AnyListComponent
+    let height: CGFloat
+  }
+
   private var renderedView: UIView?
   private var renderedComponent: AnyListComponent?
   private var coordinator: Any?
+  private var rowID: AnyHashable?
+  private var sizeCacheReader: ((SizeCacheKey) -> SizeCacheEntry?)?
+  private var sizeCacheWriter: ((SizeCacheKey, SizeCacheEntry) -> Void)?
 
   /// ComponentCell을 초기화합니다.
   /// 배경색을 투명으로 설정합니다.
@@ -27,6 +41,9 @@ final class ComponentCell: UICollectionViewCell {
   /// 기본 구현을 호출합니다.
   override func prepareForReuse() {
     super.prepareForReuse()
+    rowID = nil
+    sizeCacheReader = nil
+    sizeCacheWriter = nil
   }
 
   /// 선호하는 레이아웃 속성을 계산합니다.
@@ -35,8 +52,17 @@ final class ComponentCell: UICollectionViewCell {
     _ layoutAttributes: UICollectionViewLayoutAttributes
   ) -> UICollectionViewLayoutAttributes {
     let attributes = super.preferredLayoutAttributesFitting(layoutAttributes)
+    let width = layoutAttributes.size.width
+
+    if let key = sizeCacheKey(width: width),
+       let entry = sizeCacheReader?(key),
+       entry.component == renderedComponent {
+      attributes.size.height = entry.height
+      return attributes
+    }
+
     let targetSize = CGSize(
-      width: layoutAttributes.size.width,
+      width: width,
       height: UIView.layoutFittingCompressedSize.height
     )
 
@@ -45,7 +71,17 @@ final class ComponentCell: UICollectionViewCell {
       withHorizontalFittingPriority: .required,
       verticalFittingPriority: .fittingSizeLevel
     )
-    attributes.size.height = ceil(size.height)
+    let height = ceil(size.height)
+    attributes.size.height = height
+
+    if let key = sizeCacheKey(width: width),
+       let renderedComponent {
+      sizeCacheWriter?(
+        key,
+        .init(component: renderedComponent, height: height)
+      )
+    }
+
     return attributes
   }
 
@@ -68,10 +104,34 @@ final class ComponentCell: UICollectionViewCell {
     renderedComponent = component
   }
 
+  /// 셀의 size cache 입출력 클로저를 설정합니다.
+  func configureSizeCaching(
+    rowID: AnyHashable,
+    reader: ((SizeCacheKey) -> SizeCacheEntry?)?,
+    writer: ((SizeCacheKey, SizeCacheEntry) -> Void)?
+  ) {
+    self.rowID = rowID
+    self.sizeCacheReader = reader
+    self.sizeCacheWriter = writer
+  }
+
   /// 렌더링된 콘텐츠 뷰를 반환합니다.
   /// - Returns: 렌더링된 뷰 (옵션)
   func renderedContentView() -> UIView? {
     renderedView
+  }
+
+  private func sizeCacheKey(width: CGFloat) -> SizeCacheKey? {
+    guard let rowID,
+          let renderedComponent else {
+      return nil
+    }
+
+    return .init(
+      rowID: rowID,
+      componentTypeID: renderedComponent.componentTypeID,
+      width: Int(width.rounded(.toNearestOrAwayFromZero))
+    )
   }
 }
 #endif

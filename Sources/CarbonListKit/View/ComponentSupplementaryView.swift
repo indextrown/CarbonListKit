@@ -3,11 +3,30 @@ import UIKit
 
 /// 리스트 컴포넌트를 렌더링하는 컬렉션 뷰 supplementary view입니다.
 final class ComponentSupplementaryView: UICollectionReusableView {
+  struct SizeCacheKey: Hashable {
+    let sectionID: AnyHashable
+    let supplementaryID: AnyHashable
+    let kind: String
+    let componentTypeID: ObjectIdentifier
+    let width: Int
+    let bottomSpacing: Int
+  }
+
+  struct SizeCacheEntry {
+    let component: AnyListComponent
+    let height: CGFloat
+  }
+
   private let contentContainerView = UIView()
   private var renderedView: UIView?
   private var renderedComponent: AnyListComponent?
   private var coordinator: Any?
   private var contentContainerBottomConstraint: NSLayoutConstraint?
+  private var sectionID: AnyHashable?
+  private var supplementaryID: AnyHashable?
+  private var kind: String?
+  private var sizeCacheReader: ((SizeCacheKey) -> SizeCacheEntry?)?
+  private var sizeCacheWriter: ((SizeCacheKey, SizeCacheEntry) -> Void)?
 
   var bottomSpacing: CGFloat = 0 {
     didSet {
@@ -30,14 +49,28 @@ final class ComponentSupplementaryView: UICollectionReusableView {
   override func prepareForReuse() {
     super.prepareForReuse()
     bottomSpacing = 0
+    sectionID = nil
+    supplementaryID = nil
+    kind = nil
+    sizeCacheReader = nil
+    sizeCacheWriter = nil
   }
 
   override func preferredLayoutAttributesFitting(
     _ layoutAttributes: UICollectionViewLayoutAttributes
   ) -> UICollectionViewLayoutAttributes {
     let attributes = super.preferredLayoutAttributesFitting(layoutAttributes)
+    let width = layoutAttributes.size.width
+
+    if let key = sizeCacheKey(width: width),
+       let entry = sizeCacheReader?(key),
+       entry.component == renderedComponent {
+      attributes.size.height = entry.height
+      return attributes
+    }
+
     let targetSize = CGSize(
-      width: layoutAttributes.size.width,
+      width: width,
       height: UIView.layoutFittingCompressedSize.height
     )
 
@@ -46,7 +79,17 @@ final class ComponentSupplementaryView: UICollectionReusableView {
       withHorizontalFittingPriority: .required,
       verticalFittingPriority: .fittingSizeLevel
     )
-    attributes.size.height = ceil(size.height)
+    let height = ceil(size.height)
+    attributes.size.height = height
+
+    if let key = sizeCacheKey(width: width),
+       let renderedComponent {
+      sizeCacheWriter?(
+        key,
+        .init(component: renderedComponent, height: height)
+      )
+    }
+
     return attributes
   }
 
@@ -68,6 +111,21 @@ final class ComponentSupplementaryView: UICollectionReusableView {
     renderedComponent = component
   }
 
+  /// supplementary view의 size cache 입출력 클로저를 설정합니다.
+  func configureSizeCaching(
+    sectionID: AnyHashable,
+    supplementaryID: AnyHashable,
+    kind: String,
+    reader: ((SizeCacheKey) -> SizeCacheEntry?)?,
+    writer: ((SizeCacheKey, SizeCacheEntry) -> Void)?
+  ) {
+    self.sectionID = sectionID
+    self.supplementaryID = supplementaryID
+    self.kind = kind
+    self.sizeCacheReader = reader
+    self.sizeCacheWriter = writer
+  }
+
   private func setupContentContainerView() {
     contentContainerView.backgroundColor = .clear
     contentContainerView.translatesAutoresizingMaskIntoConstraints = false
@@ -82,6 +140,24 @@ final class ComponentSupplementaryView: UICollectionReusableView {
       contentContainerView.trailingAnchor.constraint(equalTo: trailingAnchor),
       bottomConstraint
     ])
+  }
+
+  private func sizeCacheKey(width: CGFloat) -> SizeCacheKey? {
+    guard let sectionID,
+          let supplementaryID,
+          let kind,
+          let renderedComponent else {
+      return nil
+    }
+
+    return .init(
+      sectionID: sectionID,
+      supplementaryID: supplementaryID,
+      kind: kind,
+      componentTypeID: renderedComponent.componentTypeID,
+      width: Int(width.rounded(.toNearestOrAwayFromZero)),
+      bottomSpacing: Int(bottomSpacing.rounded(.toNearestOrAwayFromZero))
+    )
   }
 }
 #endif

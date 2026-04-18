@@ -168,10 +168,6 @@ struct PostComponent: ListComponent {
 | layout context | custom layout에서 section, index, environment를 참조합니다. | `ListLayoutContext` |
 | section header/footer | row가 아닌 실제 supplementary view로 header/footer를 렌더링합니다. | `Header`, `Footer` |
 | SwiftUI 스타일 section DSL | rows를 먼저 쓰고 아래에 `header`/`footer` trailing closure를 붙일 수 있습니다. | `Section { ... } header: { ... } footer: { ... }` |
-| row content inset | header/footer는 유지하고 row 영역에만 inset을 지정합니다. | `.contentInsets(...)` |
-| section 전체 inset | header/footer와 row를 함께 감싸는 전체 section inset을 지정합니다. | `.sectionInsets(...)` |
-| section 간격 | 현재 section과 다음 section 사이 간격을 지정합니다. | `.sectionSpacing(...)` |
-| compatibility modifier | 다른 list DSL에 익숙한 naming도 제공합니다. | `withSectionLayout`, `withSectionContentInsets`, `withSectionInsets`, `withSectionSpacing` |
 | row 선택 이벤트 | 선택된 row의 id, indexPath, cell, contentView를 받습니다. | `onSelect`, `didSelect` |
 | row 표시 이벤트 | cell 표시 시작 시점을 받습니다. | `onDisplay`, `willDisplay` |
 | row 표시 종료 이벤트 | cell 표시 종료 시점을 받습니다. | `onEndDisplay` |
@@ -180,13 +176,29 @@ struct PostComponent: ListComponent {
 | prefetch 이벤트 | collection view가 아이템을 prefetch할 때 리소스를 미리 로드합니다. | `CollectionViewPrefetchingPlugin` |
 | SwiftUI 예제 앱 | SwiftUI app entry에서 UIKit view controller 예제를 표시합니다. | `UIViewControllerRepresentable` |
 
+## Modifier 요약
+
+| 범위 | Modifier | 설명 |
+| --- | --- | --- |
+| `Section` | `.layout(.vertical(spacing:))` | 세로 목록 layout을 적용하고 row 사이 간격을 지정합니다. |
+| `Section` | `.layout(.grid(columns:itemSpacing:lineSpacing:))` | grid layout을 적용합니다. `itemSpacing`은 item 사이 가로 간격, `lineSpacing`은 줄 사이 세로 간격입니다. |
+| `Section` | `.layout(.custom { context in ... })` | 직접 만든 `NSCollectionLayoutSection`을 적용합니다. |
+| `Section` | `.contentInsets(...)` | header/footer는 전체 폭으로 유지하고 row 영역에만 inset을 적용합니다. |
+| `Section` | `.sectionInsets(...)` | header/footer와 row를 함께 감싸는 전체 section inset을 적용합니다. |
+| `Section` | `.sectionSpacing(...)` | 현재 section과 다음 section 사이 간격을 지정합니다. 마지막 section에는 적용되지 않습니다. |
+| `Section` | `.header(...)`, `.footer(...)` | initializer가 아닌 modifier 방식으로 header/footer를 설정합니다. |
+| `Section` | `.withSectionLayout(...)`, `.withSectionContentInsets(...)`, `.withSectionInsets(...)`, `.withSectionSpacing(...)` | 다른 list DSL에 익숙한 naming을 위한 compatibility modifier입니다. |
+| `Row` / `Cell` | `.onSelect(...)`, `.didSelect(...)` | row 선택 이벤트를 받습니다. |
+| `Row` / `Cell` | `.onDisplay(...)`, `.willDisplay(...)` | row 표시 시작 이벤트를 받습니다. |
+| `Row` | `.onEndDisplay(...)` | row 표시 종료 이벤트를 받습니다. |
+| `List` | `.onReachEnd(offsetFromEnd:_:)` | collection view 끝 근처 도달 이벤트를 받습니다. |
+
 ## 아직 제공하지 않는 기능
 
 | 기능 | 상태 |
 | --- | --- |
 | orthogonal section scrolling | 예정 |
 | refresh control wrapper | 예정 |
-| size cache | 예정 |
 | DocC 문서 | 예정 |
 
 ## 사용법
@@ -646,3 +658,14 @@ xcodebuild -project Example/CarbonListKitExample.xcodeproj -scheme CarbonListKit
 ## Inspiration
 
 CarbonListKit은 KarrotListKit, IGListKit, Airbnb Epoxy, DifferenceKit 같은 component 기반 리스트 프레임워크에서 영감을 받았습니다.
+
+## 성능 개선 이력
+
+| 항목 | 개선 내용 | 기대 효과 |
+| --- | --- | --- |
+| component 등록 | `apply` 때 row를 `flatMap`으로 펼치지 않고 section/row nested loop로 순회합니다. | 큰 리스트에서 불필요한 중간 배열 할당을 줄입니다. |
+| reload 후 layout | `ListAdapterConfiguration.performsLayoutAfterReload`로 `reloadData` 이후 `layoutIfNeeded()` 강제 호출 여부를 제어합니다. | 초기 로드/대량 reload에서 즉시 레이아웃 계산 비용을 줄일 수 있습니다. |
+| cell size cache | `Row.id + component type + width` 기준으로 self-sizing cell 높이를 캐시합니다. 저장된 component와 현재 component가 같을 때만 재사용합니다. | 스크롤 중 반복 Auto Layout 측정 비용을 줄입니다. |
+| supplementary size cache | `sectionID + supplementaryID + kind + component type + width + bottomSpacing` 기준으로 header/footer 높이를 캐시합니다. | header/footer self-sizing 비용을 줄이고 section spacing 변화도 안전하게 구분합니다. |
+| prefetch 관리 | prefetch 작업을 `IndexPath`가 아니라 `Row.id` 기준으로 저장하고, list 적용 시 사라진 row 작업을 cancel합니다. | diff update/row 이동 후에도 prefetch 작업이 더 안정적으로 관리됩니다. |
+| header/footer 업데이트 | header/footer 내용만 바뀐 section은 section reload 대신 visible supplementary view만 re-render합니다. | row reload 범위를 줄이고 header/footer만 자주 바뀌는 화면에서 업데이트 비용을 낮춥니다. |
