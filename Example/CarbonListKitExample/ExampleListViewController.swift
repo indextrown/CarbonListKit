@@ -81,6 +81,21 @@ final class ExampleListViewController: UIViewController {
         }
 
         Row(
+          id: "prefetch",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "Prefetch",
+              subtitle: "Prefetch images before they appear on screen.",
+              badge: "Performance",
+              tintColor: .systemPurple
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(PrefetchExampleViewController(), animated: true)
+        }
+
+        Row(
           id: "korean-complete",
           component: ExampleMenuComponent(
             viewModel: .init(

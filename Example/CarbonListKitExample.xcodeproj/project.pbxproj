@@ -15,6 +15,7 @@
 		8A6F6B1C2D3E4F5000000006 /* ArticleFeedExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */; };
 		8A6F6B1C2D3E4F5000000007 /* InfiniteScrollExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */; };
 		8A6F6B1C2D3E4F5000000008 /* KoreanCompleteExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */; };
+		DFE0ED0B2F934D3D00653226 /* PrefetchExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleFeedExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniteScrollExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanCompleteExampleViewController.swift; sourceTree = "<group>"; };
+		DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchExampleViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +53,7 @@
 		8A6F6B1C2D3E4F5000000041 /* CarbonListKitExample */ = {
 			isa = PBXGroup;
 			children = (
+				DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */,
 				8A6F6B1C2D3E4F5000000011 /* CarbonListKitExampleApp.swift */,
 				8A6F6B1C2D3E4F5000000012 /* ContentView.swift */,
 				8A6F6B1C2D3E4F5000000014 /* ExampleListViewController.swift */,
@@ -146,6 +149,7 @@
 			files = (
 				8A6F6B1C2D3E4F5000000001 /* CarbonListKitExampleApp.swift in Sources */,
 				8A6F6B1C2D3E4F5000000002 /* ContentView.swift in Sources */,
+				DFE0ED0B2F934D3D00653226 /* PrefetchExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000005 /* ExampleListViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000003 /* SampleListViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000006 /* ArticleFeedExampleViewController.swift in Sources */,

@@ -170,8 +170,7 @@ struct PostComponent: ListComponent {
 | row 표시 이벤트 | cell 표시 시작 시점을 받습니다. | `onDisplay`, `willDisplay` |
 | row 표시 종료 이벤트 | cell 표시 종료 시점을 받습니다. | `onEndDisplay` |
 | reach-end 이벤트 | 끝 근처 도달 시 무한 스크롤/다음 페이지 로딩을 실행합니다. | `List.onReachEnd` |
-| horizontal scroll 감지 | collection view scroll direction에 따라 reach-end 기준 축을 바꿉니다. | `ReachEndOffset` |
-| SwiftUI 예제 앱 | SwiftUI app entry에서 UIKit view controller 예제를 표시합니다. | `UIViewControllerRepresentable` |
+| horizontal scroll 감지 | collection view scroll direction에 따라 reach-end 기준 축을 바꿉니다. | `ReachEndOffset` || prefetch 이벤트 | collection view가 아이템을 prefetch할 때 리소스를 미리 로드합니다. | `CollectionViewPrefetchingPlugin` || SwiftUI 예제 앱 | SwiftUI app entry에서 UIKit view controller 예제를 표시합니다. | `UIViewControllerRepresentable` |
 
 ## 아직 제공하지 않는 기능
 
@@ -180,7 +179,7 @@ struct PostComponent: ListComponent {
 | supplementary header/footer | 예정 |
 | orthogonal section scrolling | 예정 |
 | refresh control wrapper | 예정 |
-| prefetch event | 예정 |
+| prefetch event | ✅ |
 | size cache | 예정 |
 | DocC 문서 | 예정 |
 
@@ -193,7 +192,8 @@ struct PostComponent: ListComponent {
 ```swift
 private lazy var adapter = ListAdapter(
   collectionView: collectionView,
-  configuration: .init(batchUpdateInterruptCount: 200)
+  configuration: .init(batchUpdateInterruptCount: 200),
+  prefetchingPlugins: [RemoteImagePrefetchingPlugin(remoteImagePrefetcher: myImagePrefetcher)]
 )
 ```
 
@@ -474,6 +474,30 @@ struct TimerComponent: ListComponent {
 }
 ```
 
+prefetch가 필요한 컴포넌트는 `ComponentRemoteImagePrefetchable` 프로토콜을 준수합니다.
+
+```swift
+struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
+  struct ViewModel: Equatable {
+    let imageURL: URL
+  }
+
+  let viewModel: ViewModel
+
+  var remoteImageURLs: [URL] {
+    [viewModel.imageURL]
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> ImageView {
+    ImageView()
+  }
+
+  func updateView(_ view: ImageView, context: ListComponentContext<Void>) {
+    view.loadImage(from: viewModel.imageURL)
+  }
+}
+```
+
 ## 예제 앱
 
 저장소에는 SwiftUI entry point에서 UIKit view controller를 표시하는 예제 앱이 포함되어 있습니다.
@@ -489,6 +513,7 @@ Example/
 | `Diff updates` | row 추가, 셔플, 내용 업데이트와 animated diff를 보여줍니다. |
 | `Entity to ViewModel` | domain entity와 component ViewModel 분리, 업데이트 전략, layout modifier를 보여줍니다. |
 | `Infinite Scroll` | `onReachEnd`로 다음 페이지를 append합니다. |
+| `Prefetch` | collection view가 아이템을 prefetch할 때 이미지를 미리 로드하고 캐시에 저장합니다. prefetch된 이미지는 즉시 표시되어 부드러운 스크롤을 제공합니다. |
 | `한글 종합 예제` | diff, ViewModel, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
 
 빌드:

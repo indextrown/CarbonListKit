@@ -46,6 +46,13 @@ public struct AnyListComponent: Equatable {
     box.layout(view: view, in: container)
   }
 
+  /// 컴포넌트를 특정 타입으로 캐스팅합니다.
+  /// - Parameter type: 캐스팅할 타입
+  /// - Returns: 캐스팅된 컴포넌트 (옵션)
+  func `as`<T>(_ type: T.Type) -> T? {
+    box as? T
+  }
+
   /// 두 AnyListComponent가 같은지 비교합니다.
   /// 타입과 뷰 모델을 비교합니다.
   public static func == (lhs: AnyListComponent, rhs: AnyListComponent) -> Bool {

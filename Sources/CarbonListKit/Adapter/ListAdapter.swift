@@ -1,6 +1,9 @@
 #if canImport(UIKit)
 import DifferenceKit
 import UIKit
+#if canImport(Combine)
+import Combine
+#endif
 
 /// CarbonListKit의 핵심 어댑터 클래스입니다.
 /// UICollectionView와 List 모델을 연결하여 데이터를 표시하고 업데이트합니다.
@@ -18,21 +21,33 @@ public final class ListAdapter: NSObject {
     completion: (() -> Void)?
   )?
 
+  private(set) var prefetchingIndexPathOperations = [IndexPath: [AnyCancellable]]()
+  private let prefetchingPlugins: [CollectionViewPrefetchingPlugin]
+
   /// ListAdapter를 초기화합니다.
   /// - Parameters:
   ///   - collectionView: 데이터를 표시할 UICollectionView
   ///   - configuration: 어댑터 설정 (기본값: .default)
+  ///   - prefetchingPlugins: prefetch 플러그인들 (기본값: 빈 배열)
   public init(
     collectionView: UICollectionView,
-    configuration: ListAdapterConfiguration = .default
+    configuration: ListAdapterConfiguration = .default,
+    prefetchingPlugins: [CollectionViewPrefetchingPlugin] = []
   ) {
     self.configuration = configuration
+    self.prefetchingPlugins = prefetchingPlugins
     self.collectionView = collectionView
     super.init()
 
     collectionView.dataSource = self
     collectionView.delegate = self
     collectionView.collectionViewLayout = makeCompositionalLayout()
+
+    #if canImport(Combine)
+    if prefetchingPlugins.isEmpty == false {
+      collectionView.prefetchDataSource = self
+    }
+    #endif
   }
 
   /// 리스트를 적용하여 컬렉션 뷰를 업데이트합니다.
@@ -513,4 +528,41 @@ extension ListAdapter: UICollectionViewDelegate {
     return layout?.configuration.scrollDirection ?? .vertical
   }
 }
+
+#if canImport(Combine)
+// MARK: - UICollectionViewDataSourcePrefetching
+
+extension ListAdapter: UICollectionViewDataSourcePrefetching {
+  public func collectionView(
+    _ collectionView: UICollectionView,
+    prefetchItemsAt indexPaths: [IndexPath]
+  ) {
+    for indexPath in indexPaths {
+      guard prefetchingIndexPathOperations[indexPath] == nil else {
+        continue
+      }
+
+      guard let row = row(at: indexPath),
+            let prefetchableComponent = row.component as? ComponentResourcePrefetchable else {
+        continue
+      }
+
+      prefetchingIndexPathOperations[indexPath] = prefetchingPlugins.compactMap {
+        $0.prefetch(with: prefetchableComponent)
+      }
+    }
+  }
+
+  public func collectionView(
+    _ collectionView: UICollectionView,
+    cancelPrefetchingForItemsAt indexPaths: [IndexPath]
+  ) {
+    for indexPath in indexPaths {
+      prefetchingIndexPathOperations.removeValue(forKey: indexPath)?.forEach {
+        $0.cancel()
+      }
+    }
+  }
+}
+#endif
 #endif
