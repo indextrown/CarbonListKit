@@ -54,6 +54,11 @@ final class ComponentCell: UICollectionViewCell {
     let attributes = super.preferredLayoutAttributesFitting(layoutAttributes)
     let width = layoutAttributes.size.width
 
+    if case .absolute(let height) = renderedComponent?.height {
+      attributes.size.height = height
+      return attributes
+    }
+
     if let key = sizeCacheKey(width: width),
        let entry = sizeCacheReader?(key),
        entry.component == renderedComponent {

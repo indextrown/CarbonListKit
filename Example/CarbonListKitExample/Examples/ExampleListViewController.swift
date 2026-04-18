@@ -127,6 +127,21 @@ final class ExampleListViewController: UIViewController {
         }
 
         Row(
+          id: "component-height",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "Component Height",
+              subtitle: "Compare automatic self-sizing rows with component-defined heights.",
+              badge: "Height",
+              tintColor: .systemBrown
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(ComponentHeightExampleViewController(), animated: true)
+        }
+
+        Row(
           id: "swiftui-carbon-list",
           component: ExampleMenuComponent(
             viewModel: .init(

@@ -14,6 +14,14 @@ public struct ListComponentContext<Coordinator> {
   }
 }
 
+/// 리스트 컴포넌트의 높이 결정 방식을 나타냅니다.
+public enum ListComponentHeight: Equatable {
+  /// Auto Layout 기반 self-sizing으로 높이를 계산합니다.
+  case automatic
+  /// 지정한 값으로 높이를 고정합니다.
+  case absolute(CGFloat)
+}
+
 /// 리스트에서 사용할 수 있는 컴포넌트를 정의하는 프로토콜입니다.
 /// 뷰 모델, 뷰, 코디네이터를 포함하여 재사용 가능한 UI 컴포넌트를 만듭니다.
 public protocol ListComponent {
@@ -26,6 +34,8 @@ public protocol ListComponent {
 
   /// 뷰 모델
   var viewModel: ViewModel { get }
+  /// 컴포넌트 높이
+  var height: ListComponentHeight { get }
   /// 재사용 식별자
   var reuseIdentifier: String { get }
 
@@ -40,6 +50,11 @@ public protocol ListComponent {
 }
 
 extension ListComponent {
+  /// 기본 높이는 Auto Layout 기반 self-sizing입니다.
+  public var height: ListComponentHeight {
+    .automatic
+  }
+
   /// 기본 재사용 식별자를 반환합니다.
   /// 타입 이름을 문자열로 변환하여 사용합니다.
   public var reuseIdentifier: String {

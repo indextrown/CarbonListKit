@@ -16,6 +16,11 @@ public struct AnyListComponent: Equatable {
     box.reuseIdentifier
   }
 
+  /// 컴포넌트 높이
+  public var height: ListComponentHeight {
+    box.height
+  }
+
   var viewModel: AnyEquatableValue {
     box.viewModel
   }
@@ -54,9 +59,11 @@ public struct AnyListComponent: Equatable {
   }
 
   /// 두 AnyListComponent가 같은지 비교합니다.
-  /// 타입과 뷰 모델을 비교합니다.
+  /// 타입, 뷰 모델, 높이를 비교합니다.
   public static func == (lhs: AnyListComponent, rhs: AnyListComponent) -> Bool {
-    lhs.componentTypeID == rhs.componentTypeID && lhs.viewModel == rhs.viewModel
+    lhs.componentTypeID == rhs.componentTypeID
+      && lhs.viewModel == rhs.viewModel
+      && lhs.height == rhs.height
   }
 }
 
@@ -80,6 +87,7 @@ struct AnyEquatableValue: Equatable {
 private protocol AnyListComponentBox {
   var componentTypeID: ObjectIdentifier { get }
   var reuseIdentifier: String { get }
+  var height: ListComponentHeight { get }
   var viewModel: AnyEquatableValue { get }
 
   func makeCoordinator() -> Any
@@ -99,6 +107,11 @@ private struct ListComponentBox<Component: ListComponent>: AnyListComponentBox {
   /// 재사용 식별자
   var reuseIdentifier: String {
     component.reuseIdentifier
+  }
+
+  /// 컴포넌트 높이
+  var height: ListComponentHeight {
+    component.height
   }
 
   /// 뷰 모델

@@ -17,6 +17,7 @@
 		8A6F6B1C2D3E4F5000000008 /* KoreanCompleteExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */; };
 		8A6F6B1C2D3E4F5000000009 /* HeaderFooterExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */; };
 		8A6F6B1C2D3E4F500000000A /* HeaderFooterDSLExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */; };
+		DFC0DE012F94000000B2896F /* ComponentHeightExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC0DE002F94000000B2896F /* ComponentHeightExampleViewController.swift */; };
 		DFBADD012F93A00000B2896F /* SwiftUICarbonListExampleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBADD002F93A00000B2896F /* SwiftUICarbonListExampleView.swift */; };
 		DFADA1A92F9355AC00B2896F /* StudyVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFADA1A82F9355AC00B2896F /* StudyVC.swift */; };
 		DFE0ED0B2F934D3D00653226 /* PrefetchExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */; };
@@ -33,6 +34,7 @@
 		8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanCompleteExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderFooterExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderFooterDSLExampleViewController.swift; sourceTree = "<group>"; };
+		DFC0DE002F94000000B2896F /* ComponentHeightExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentHeightExampleViewController.swift; sourceTree = "<group>"; };
 		DFBADD002F93A00000B2896F /* SwiftUICarbonListExampleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUICarbonListExampleView.swift; sourceTree = "<group>"; };
 		DFADA1A82F9355AC00B2896F /* StudyVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyVC.swift; sourceTree = "<group>"; };
 		DFE0ED0A2F934D3D00653226 /* PrefetchExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchExampleViewController.swift; sourceTree = "<group>"; };
@@ -87,6 +89,7 @@
 				8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */,
 				8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */,
 				8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */,
+				DFC0DE002F94000000B2896F /* ComponentHeightExampleViewController.swift */,
 				DFBADD002F93A00000B2896F /* SwiftUICarbonListExampleView.swift */,
 				8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */,
 			);
@@ -185,6 +188,7 @@
 				8A6F6B1C2D3E4F5000000007 /* InfiniteScrollExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000009 /* HeaderFooterExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F500000000A /* HeaderFooterDSLExampleViewController.swift in Sources */,
+				DFC0DE012F94000000B2896F /* ComponentHeightExampleViewController.swift in Sources */,
 				DFBADD012F93A00000B2896F /* SwiftUICarbonListExampleView.swift in Sources */,
 				8A6F6B1C2D3E4F5000000008 /* KoreanCompleteExampleViewController.swift in Sources */,
 			);

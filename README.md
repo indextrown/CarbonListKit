@@ -165,8 +165,9 @@ struct FeedScreen: View {
 | `Section` | row 묶음과 section 단위 layout, inset, header/footer를 가집니다. | `layout`, `contentInsets`, `sectionInsets`, `sectionSpacing`, `header`, `footer` |
 | `Row` | collection view item 하나입니다. id와 component, row 이벤트를 가집니다. | `onSelect`, `onDisplay`, `onEndDisplay` |
 | `Cell` | `Row`와 같은 타입입니다. cell 중심 네이밍을 선호할 때 씁니다. | `didSelect`, `willDisplay` |
-| `ListComponent` | 앱 데이터를 UIKit view로 렌더링합니다. | `makeView`, `updateView`, `layoutView`, `makeCoordinator` |
-| `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality와 reuse identifier를 관리합니다. | `reuseIdentifier` |
+| `ListComponent` | 앱 데이터를 UIKit view로 렌더링합니다. | `makeView`, `updateView`, `layoutView`, `height`, `makeCoordinator` |
+| `ListComponentHeight` | component가 row 높이를 자동 측정할지 직접 지정할지 표현합니다. | `.automatic`, `.absolute(...)` |
+| `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality, reuse identifier, height를 관리합니다. | `reuseIdentifier`, `height` |
 | `ListComponentContext` | component의 coordinator를 view 생성/업데이트에 전달합니다. | `context.coordinator` |
 | `ListLayout` | section별 compositional layout 방식을 표현합니다. | `.vertical`, `.grid`, `.custom` |
 | `Header` | 섹션 header supplementary view를 선언합니다. | `Header(id:component:layoutSize:)` |
@@ -184,6 +185,7 @@ struct FeedScreen: View {
 | UIKit view component | 각 row는 일반 `UIView` 기반 component로 렌더링됩니다. | `ListComponent` |
 | Auto Layout 렌더링 | 기본적으로 component view를 cell content view edge에 고정합니다. | `layoutView` |
 | self-sizing cell | component view의 Auto Layout 크기를 collection view cell 크기에 반영합니다. | `ComponentCell` |
+| component height | component가 row 높이를 직접 지정할 수 있습니다. 지정하지 않으면 self-sizing을 사용합니다. | `ListComponent.height`, `ListComponentHeight` |
 | coordinator | component가 재사용되는 동안 유지할 상태 객체를 만들 수 있습니다. | `makeCoordinator`, `ListComponentContext` |
 | reuse identifier override | 같은 component type을 여러 cell 종류로 나누어 등록할 수 있습니다. | `var reuseIdentifier` |
 | diff update | DifferenceKit으로 section/row 삽입, 삭제, 이동, 업데이트를 적용합니다. | `adapter.apply(updateStrategy:)` |
@@ -589,6 +591,32 @@ func layoutView(_ view: ArticleRowView, in container: UIView) {
 }
 ```
 
+row 높이를 직접 알고 있다면 component에서 `height`를 구현합니다. 구현하지 않으면 기본값은 `.automatic`이고, 기존처럼 Auto Layout self-sizing으로 측정합니다.
+
+```swift
+struct FixedArticleComponent: ListComponent {
+  struct ViewModel: Equatable {
+    let title: String
+  }
+
+  let viewModel: ViewModel
+
+  var height: ListComponentHeight {
+    .absolute(72)
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> ArticleRowView {
+    ArticleRowView()
+  }
+
+  func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
+    view.configure(title: viewModel.title)
+  }
+}
+```
+
+`.absolute`를 사용하면 `ComponentCell`이 `systemLayoutSizeFitting`을 건너뛰고 지정한 높이를 바로 사용합니다. 높이가 콘텐츠보다 작으면 내부 view가 압축될 수 있으므로, 고정 높이에 맞는 view 구성을 함께 설계해야 합니다.
+
 component가 상태 객체를 가져야 한다면 coordinator를 사용합니다.
 
 ```swift
@@ -662,6 +690,7 @@ Example/
 | `Prefetch` | collection view가 아이템을 prefetch할 때 이미지를 미리 로드하고 캐시에 저장합니다. prefetch된 이미지는 즉시 표시되어 부드러운 스크롤을 제공합니다. |
 | `Header & Footer` | 실제 supplementary header/footer, section spacing, grid와 함께 쓰는 예제를 보여줍니다. |
 | `Header & Footer DSL` | `Section { rows } header: { ... } footer: { ... }` 문법과 inset modifier 차이를 보여줍니다. |
+| `Component Height` | `.automatic` self-sizing row와 component가 직접 지정한 `.absolute` row 높이를 비교합니다. |
 | `SwiftUI CarbonList` | SwiftUI 화면에서 `CarbonList { Section { Row } }` DSL을 직접 쓰는 예제를 보여줍니다. |
 | `한글 종합 예제` | diff, ViewModel, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
 
@@ -697,6 +726,7 @@ CarbonListKit은 KarrotListKit, IGListKit, Airbnb Epoxy, DifferenceKit 같은 co
 | component 등록 | `apply` 때 row를 `flatMap`으로 펼치지 않고 section/row nested loop로 순회합니다. | 큰 리스트에서 불필요한 중간 배열 할당을 줄입니다. |
 | reload 후 layout | `ListAdapterConfiguration.performsLayoutAfterReload`로 `reloadData` 이후 `layoutIfNeeded()` 강제 호출 여부를 제어합니다. | 초기 로드/대량 reload에서 즉시 레이아웃 계산 비용을 줄일 수 있습니다. |
 | cell size cache | `Row.id + component type + width` 기준으로 self-sizing cell 높이를 캐시합니다. 저장된 component와 현재 component가 같을 때만 재사용합니다. | 스크롤 중 반복 Auto Layout 측정 비용을 줄입니다. |
+| component absolute height | component가 `.absolute` 높이를 제공하면 `systemLayoutSizeFitting` 측정을 건너뜁니다. | 높이를 알고 있는 row에서 Auto Layout 측정 비용을 제거하고 layout 예측 가능성을 높입니다. |
 | supplementary size cache | `sectionID + supplementaryID + kind + component type + width + bottomSpacing` 기준으로 header/footer 높이를 캐시합니다. | header/footer self-sizing 비용을 줄이고 section spacing 변화도 안전하게 구분합니다. |
 | prefetch 관리 | prefetch 작업을 `IndexPath`가 아니라 `Row.id` 기준으로 저장하고, list 적용 시 사라진 row 작업을 cancel합니다. | diff update/row 이동 후에도 prefetch 작업이 더 안정적으로 관리됩니다. |
 | header/footer 업데이트 | header/footer 내용만 바뀐 section은 section reload 대신 visible supplementary view만 re-render합니다. | row reload 범위를 줄이고 header/footer만 자주 바뀌는 화면에서 업데이트 비용을 낮춥니다. |
@@ -721,6 +751,9 @@ graph TD
   Header --> AnyComponent
   Footer --> AnyComponent
   AnyComponent --> Component["ListComponent"]
+  Component --> Height["ListComponentHeight"]
+  Height --> Automatic["automatic self-sizing"]
+  Height --> Absolute["absolute height"]
   Component --> View["UIView"]
   Component --> Coordinator["Coordinator"]
 
@@ -735,6 +768,8 @@ graph TD
   Layout --> Vertical["Vertical Layout"]
   Layout --> Grid["Grid Layout"]
   Layout --> Custom["Custom Layout"]
+  SizeCache --> Automatic
+  Absolute --> CellSizing["Skip Auto Layout fitting"]
   Prefetch --> RemoteImage["Remote Image Prefetching"]
 ```
 
@@ -748,6 +783,7 @@ sequenceDiagram
   participant CV as UICollectionView
   participant Cell as Cell / Supplementary View
   participant Component as ListComponent
+  participant Layout as Auto Layout
   participant Event as Event Handlers
 
   App->>Adapter: apply(newList, strategy)
@@ -768,5 +804,14 @@ sequenceDiagram
   Cell->>Component: makeView 또는 재사용 view 준비
   Cell->>Component: updateView()
   Component-->>Cell: UIView 상태 반영
+  Cell->>Component: height 확인
+  alt height == .absolute
+    Component-->>Cell: 지정 높이 반환
+    Cell-->>CV: preferred height 적용
+  else height == .automatic
+    Cell->>Layout: systemLayoutSizeFitting()
+    Layout-->>Cell: 측정 높이 반환
+    Cell-->>CV: preferred height 적용 및 cache 저장
+  end
   Adapter->>Event: onSelect / onDisplay / onReachEnd 호출
 ```

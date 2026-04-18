@@ -314,6 +314,45 @@ struct EventsAndConfigurationTests {
   }
 }
 
+@Suite("Component Height")
+struct ComponentHeightTests {
+  @Test("ListComponent의 기본 높이는 automatic이다")
+  func componentDefaultHeightIsAutomatic() {
+    let component = TestComponent(viewModel: .init(text: "내용"))
+
+    #expect(component.height == .automatic)
+  }
+
+  @Test("Row equality는 component height 변경을 비교한다")
+  func rowEqualityIncludesComponentHeight() {
+    let base = Row(
+      id: "row",
+      component: FixedHeightComponent(viewModel: .init(text: "내용"), height: .absolute(44))
+    )
+    let differentHeight = Row(
+      id: "row",
+      component: FixedHeightComponent(viewModel: .init(text: "내용"), height: .absolute(72))
+    )
+
+    #expect(base != differentHeight)
+  }
+
+  @MainActor
+  @Test("ComponentCell은 absolute height면 Auto Layout 측정 대신 지정 높이를 사용한다")
+  func componentCellUsesAbsoluteHeight() {
+    let cell = ComponentCell(frame: CGRect(x: 0, y: 0, width: 100, height: 80))
+    let component = FixedHeightComponent(viewModel: .init(text: "내용"), height: .absolute(123))
+    cell.render(component: AnyListComponent(component))
+
+    let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: 0, section: 0))
+    attributes.size = CGSize(width: 100, height: 80)
+
+    let fittedAttributes = cell.preferredLayoutAttributesFitting(attributes)
+
+    #expect(fittedAttributes.size.height == 123)
+  }
+}
+
 #if canImport(SwiftUI)
 @Suite("SwiftUI Bridge")
 struct SwiftUIBridgeTests {
@@ -372,6 +411,23 @@ private struct TestComponent: ListComponent {
   }
 
   let viewModel: ViewModel
+
+  func makeView(context: ListComponentContext<Void>) -> UILabel {
+    UILabel()
+  }
+
+  func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
+    view.text = viewModel.text
+  }
+}
+
+private struct FixedHeightComponent: ListComponent {
+  struct ViewModel: Equatable {
+    let text: String
+  }
+
+  let viewModel: ViewModel
+  let height: ListComponentHeight
 
   func makeView(context: ListComponentContext<Void>) -> UILabel {
     UILabel()

@@ -388,6 +388,32 @@ var reuseIdentifier: String {
 }
 ```
 
+If a row has a known height, implement `height` on the component. If you do not implement it, the default is `.automatic` and CarbonListKit keeps using Auto Layout self-sizing.
+
+```swift
+struct FixedArticleComponent: ListComponent {
+  struct ViewModel: Equatable {
+    let title: String
+  }
+
+  let viewModel: ViewModel
+
+  var height: ListComponentHeight {
+    .absolute(72)
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> ArticleRowView {
+    ArticleRowView()
+  }
+
+  func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
+    view.configure(title: viewModel.title)
+  }
+}
+```
+
+When a component returns `.absolute`, `ComponentCell` skips `systemLayoutSizeFitting` and applies that height directly. Make sure the component view is designed for the fixed height, otherwise its content may be compressed.
+
 ## Entity vs Component ViewModel
 
 App entities should stay separate from component view models.
@@ -671,6 +697,7 @@ Examples:
 - `Prefetch`: prefetches images through collection view prefetching and stores them in cache
 - `Header & Footer`: demonstrates real supplementary header/footer views, section spacing, and grid usage
 - `Header & Footer DSL`: demonstrates `Section { rows } header: { ... } footer: { ... }` and inset modifier differences
+- `Component Height`: compares `.automatic` self-sizing rows with component-defined `.absolute` row heights
 - `SwiftUI CarbonList`: demonstrates the `CarbonList { Section { Row } }` DSL directly in a SwiftUI screen
 - `한글 종합 예제`: shows diffing, ViewModel mapping, events, layouts, and infinite scrolling in one screen
 
@@ -699,6 +726,7 @@ Implemented:
 - `Row`
 - `Cell` typealias
 - `ListComponent`
+- `ListComponentHeight`
 - `AnyListComponent`
 - `ListComponentContext`
 - result builders
@@ -709,6 +737,7 @@ Implemented:
 - UIKit delegate ownership
 - Auto Layout based component rendering
 - self-sizing collection view cells
+- component-defined row heights
 - component coordinators
 - component reuseIdentifier override
 - vertical layout
@@ -775,6 +804,7 @@ CarbonListKit takes inspiration from component-based list frameworks such as Kar
 | Component registration | Iterates sections and rows directly during `apply` instead of flattening rows with `flatMap`. | Reduces unnecessary intermediate array allocations in large lists. |
 | Layout after reload | `ListAdapterConfiguration.performsLayoutAfterReload` controls whether `layoutIfNeeded()` is forced after `reloadData`. | Can reduce immediate layout work during initial loads and large reloads. |
 | Cell size cache | Caches self-sizing cell heights by `Row.id + component type + width`. Cached heights are reused only when the stored component equals the current component. | Reduces repeated Auto Layout measurement during scrolling. |
+| Component absolute height | Skips `systemLayoutSizeFitting` when a component provides an `.absolute` height. | Removes Auto Layout measurement cost for rows whose height is already known and makes layout more predictable. |
 | Supplementary size cache | Caches header/footer heights by `sectionID + supplementaryID + kind + component type + width + bottomSpacing`. | Reduces supplementary self-sizing work while safely distinguishing section spacing changes. |
 | Prefetch management | Stores prefetch operations by `Row.id` instead of `IndexPath`, and cancels operations for rows removed by a list apply. | Keeps prefetch work more stable across diff updates and row moves. |
 | Header/footer updates | Re-renders visible supplementary views when only header/footer content changes, instead of reloading the entire section. | Reduces row reload work for screens where headers or footers change frequently. |
@@ -799,6 +829,9 @@ graph TD
   Header --> AnyComponent
   Footer --> AnyComponent
   AnyComponent --> Component["ListComponent"]
+  Component --> Height["ListComponentHeight"]
+  Height --> Automatic["automatic self-sizing"]
+  Height --> Absolute["absolute height"]
   Component --> View["UIView"]
   Component --> Coordinator["Coordinator"]
 
@@ -813,6 +846,8 @@ graph TD
   Layout --> Vertical["Vertical Layout"]
   Layout --> Grid["Grid Layout"]
   Layout --> Custom["Custom Layout"]
+  SizeCache --> Automatic
+  Absolute --> CellSizing["Skip Auto Layout fitting"]
   Prefetch --> RemoteImage["Remote Image Prefetching"]
 ```
 
@@ -826,6 +861,7 @@ sequenceDiagram
   participant CV as UICollectionView
   participant Cell as Cell / Supplementary View
   participant Component as ListComponent
+  participant Layout as Auto Layout
   participant Event as Event Handlers
 
   App->>Adapter: apply(newList, strategy)
@@ -846,5 +882,14 @@ sequenceDiagram
   Cell->>Component: makeView or prepare reused view
   Cell->>Component: updateView()
   Component-->>Cell: Apply UIView state
+  Cell->>Component: Read height
+  alt height == .absolute
+    Component-->>Cell: Return fixed height
+    Cell-->>CV: Apply preferred height
+  else height == .automatic
+    Cell->>Layout: systemLayoutSizeFitting()
+    Layout-->>Cell: Return measured height
+    Cell-->>CV: Apply preferred height and write cache
+  end
   Adapter->>Event: Call onSelect / onDisplay / onReachEnd
 ```
