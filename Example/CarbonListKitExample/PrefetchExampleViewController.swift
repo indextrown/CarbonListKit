@@ -41,10 +41,11 @@ final class PrefetchExampleViewController: UIViewController {
 
   private func loadImages() {
     // 샘플 이미지 데이터 생성
-    images = (1...100).map { index in
+    images = (1...1000).map { index in
       ImageItem(
         id: "image_\(index)",
-        imageURL: URL(string: "https://picsum.photos/300/200?random=\(index)")!,
+        imageURL: URL(string: "https://picsum.photos/seed/\(index)/300/200")!,
+        // imageURL: URL(string: "https://picsum.photos/300/200?random=\(index)")!,
         title: "이미지 \(index)"
       )
     }
@@ -61,7 +62,7 @@ final class PrefetchExampleViewController: UIViewController {
           )
         }
       }
-      .layout(.grid(columns: 2, itemSpacing: 8, lineSpacing: 8))
+      .layout(.grid(columns: 4, itemSpacing: 8, lineSpacing: 8))
       .contentInsets(.init(top: 16, leading: 16, bottom: 16, trailing: 16))
     }
   }
