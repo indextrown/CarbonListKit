@@ -360,9 +360,10 @@ public struct Section: Identifiable, Equatable {
   }
 
   /// 두 Section이 같은지 비교합니다.
-  /// id, layout, contentInsets를 비교합니다.
+  /// id, rows, layout, contentInsets를 비교합니다.
   public static func == (lhs: Section, rhs: Section) -> Bool {
     lhs.id == rhs.id
+      && lhs.rows == rhs.rows
       && lhs.layout == rhs.layout
       && lhs.contentInsets.top == rhs.contentInsets.top
       && lhs.contentInsets.leading == rhs.contentInsets.leading
@@ -409,9 +410,22 @@ extension Section: DifferentiableSection {
     self.rows = Array(elements)
   }
 
-  /// 콘텐츠가 같은지 비교합니다.
+  /// 섹션 자체의 표시 콘텐츠가 같은지 비교합니다.
+  /// rows는 element diff에서 별도로 비교하여 move 애니메이션을 유지합니다.
   public func isContentEqual(to source: Section) -> Bool {
-    self == source
+    id == source.id
+      && layout == source.layout
+      && contentInsets.top == source.contentInsets.top
+      && contentInsets.leading == source.contentInsets.leading
+      && contentInsets.bottom == source.contentInsets.bottom
+      && contentInsets.trailing == source.contentInsets.trailing
+      && sectionInsets.top == source.sectionInsets.top
+      && sectionInsets.leading == source.sectionInsets.leading
+      && sectionInsets.bottom == source.sectionInsets.bottom
+      && sectionInsets.trailing == source.sectionInsets.trailing
+      && sectionSpacing == source.sectionSpacing
+      && header == source.header
+      && footer == source.footer
   }
 }
 #endif

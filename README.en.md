@@ -15,7 +15,7 @@ It removes repeated collection view boilerplate from view controllers:
 - compositional layout setup
 - list reach-end events
 
-CarbonListKit is still early. The current implementation focuses on the core list adapter, supplementary header/footer support, prefetching, and the example app. Refresh wrappers, orthogonal scrolling, size caching, and DocC documentation are planned next.
+CarbonListKit is still early. The current implementation focuses on the core list adapter, SwiftUI bridge, supplementary header/footer support, prefetching, and the example app. Refresh wrappers, orthogonal scrolling, and DocC documentation are planned next.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ CarbonListKit is still early. The current implementation focuses on the core lis
 | --- | --- |
 | Platform | iOS 13+ |
 | Language | Swift 5.9+ |
-| UI framework | UIKit |
+| UI framework | UIKit, SwiftUI bridge |
 | Package manager | Swift Package Manager |
 | Diff engine | DifferenceKit |
 
@@ -89,6 +89,34 @@ final class FeedViewController: UIViewController {
         }
       }
       .layout(.vertical(spacing: 12))
+      .contentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
+    }
+  }
+}
+```
+
+### SwiftUI Usage
+
+`CarbonList` wraps the existing `ListAdapter` for SwiftUI. Rendering, diff updates, and layout are still handled by the UIKit adapter.
+
+```swift
+import CarbonListKit
+import SwiftUI
+
+struct FeedScreen: View {
+  let posts: [Post]
+
+  var body: some View {
+    CarbonList(updateStrategy: .animated, backgroundColor: .systemGroupedBackground) {
+      Section(id: "posts") {
+        for post in posts {
+          Row(
+            id: post.id,
+            component: PostComponent(viewModel: .init(post: post))
+          )
+        }
+      }
+      .layout(.vertical(spacing: 10))
       .contentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
     }
   }
@@ -643,6 +671,7 @@ Examples:
 - `Prefetch`: prefetches images through collection view prefetching and stores them in cache
 - `Header & Footer`: demonstrates real supplementary header/footer views, section spacing, and grid usage
 - `Header & Footer DSL`: demonstrates `Section { rows } header: { ... } footer: { ... }` and inset modifier differences
+- `SwiftUI CarbonList`: demonstrates the `CarbonList { Section { Row } }` DSL directly in a SwiftUI screen
 - `한글 종합 예제`: shows diffing, ViewModel mapping, events, layouts, and infinite scrolling in one screen
 
 Build:
@@ -662,6 +691,9 @@ Implemented:
 - Swift Package library target
 - `ListAdapter`
 - `ListAdapterConfiguration`
+- SwiftUI bridge
+  - `CarbonList`
+  - `CarbonListView`
 - `List`
 - `Section`
 - `Row`
@@ -752,7 +784,10 @@ CarbonListKit takes inspiration from component-based list frameworks such as Kar
 ```mermaid
 graph TD
   App["App / ViewController"] --> Adapter["ListAdapter"]
+  SwiftUIView["SwiftUI View"] --> CarbonList["CarbonList / CarbonListView"]
+  CarbonList --> Adapter
   App --> ListDSL["List DSL"]
+  SwiftUIView --> ListDSL
 
   ListDSL --> List["List"]
   List --> Section["Section"]

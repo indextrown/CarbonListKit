@@ -1,4 +1,5 @@
 import CarbonListKit
+import SwiftUI
 import UIKit
 
 final class ExampleListViewController: UIViewController {
@@ -126,6 +127,22 @@ final class ExampleListViewController: UIViewController {
         }
 
         Row(
+          id: "swiftui-carbon-list",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "SwiftUI CarbonList",
+              subtitle: "Use the same List DSL directly from a SwiftUI screen.",
+              badge: "SwiftUI",
+              tintColor: .systemCyan
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          let viewController = UIHostingController(rootView: SwiftUICarbonListExampleView())
+          self?.navigationController?.pushViewController(viewController, animated: true)
+        }
+
+        Row(
           id: "korean-complete",
           component: ExampleMenuComponent(
             viewModel: .init(
@@ -247,6 +264,12 @@ private final class ExampleMenuView: UIView {
     containerView.addSubview(subtitleLabel)
     containerView.addSubview(chevronImageView)
 
+    let subtitleBottomConstraint = subtitleLabel.bottomAnchor.constraint(
+      equalTo: containerView.bottomAnchor,
+      constant: -16
+    )
+    subtitleBottomConstraint.priority = .defaultHigh
+
     NSLayoutConstraint.activate([
       containerView.topAnchor.constraint(equalTo: topAnchor),
       containerView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
@@ -265,7 +288,7 @@ private final class ExampleMenuView: UIView {
       subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
       subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
       subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
-      subtitleLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16),
+      subtitleBottomConstraint,
 
       chevronImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
       chevronImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),

@@ -168,6 +168,41 @@ struct SectionEqualityTests {
     #expect(base != base.footer(testFooter(id: "footer", text: "푸터")))
   }
 
+  @Test("Section equality는 rows 변경과 순서를 비교한다")
+  func sectionEqualityIncludesRowsAndOrder() {
+    let base = Section(id: "section") {
+      testRow(id: "row-1", text: "내용 1")
+      testRow(id: "row-2", text: "내용 2")
+    }
+    let reordered = Section(id: "section") {
+      testRow(id: "row-2", text: "내용 2")
+      testRow(id: "row-1", text: "내용 1")
+    }
+    let inserted = Section(id: "section") {
+      testRow(id: "row-0", text: "내용 0")
+      testRow(id: "row-1", text: "내용 1")
+      testRow(id: "row-2", text: "내용 2")
+    }
+
+    #expect(base != reordered)
+    #expect(base != inserted)
+  }
+
+  @Test("DifferenceKit section content 비교는 rows 순서를 element diff에 맡긴다")
+  func sectionContentEqualityIgnoresRowsForElementDiff() {
+    let base = Section(id: "section") {
+      testRow(id: "row-1", text: "내용 1")
+      testRow(id: "row-2", text: "내용 2")
+    }
+    let reordered = Section(id: "section") {
+      testRow(id: "row-2", text: "내용 2")
+      testRow(id: "row-1", text: "내용 1")
+    }
+
+    #expect(base.isContentEqual(to: reordered))
+    #expect(base != reordered)
+  }
+
   @Test("Row equality는 id와 component를 비교하고 이벤트는 비교하지 않는다")
   func rowEqualityIncludesIDAndComponentButNotEvents() {
     let base = testRow(id: "row", text: "내용")
@@ -278,6 +313,32 @@ struct EventsAndConfigurationTests {
     #expect(!configuration.isSizeCachingEnabled)
   }
 }
+
+#if canImport(SwiftUI)
+@Suite("SwiftUI Bridge")
+struct SwiftUIBridgeTests {
+  @Test("CarbonListView는 List 모델로 초기화할 수 있다")
+  func carbonListViewBuildsWithListModel() {
+    let list = List {
+      makeSection()
+    }
+    let view = CarbonListView(list, updateStrategy: .reloadData)
+
+    #expect(view.list.sections.count == 1)
+    #expect(view.updateStrategy == .reloadData)
+  }
+
+  @Test("CarbonList 별칭은 List DSL로 초기화할 수 있다")
+  func carbonListAliasBuildsWithListDSL() {
+    let view = CarbonList {
+      makeSection()
+    }
+
+    #expect(view.list.sections.map(\.id) == ["section"].map(AnyHashable.init))
+  }
+
+}
+#endif
 
 private func makeSection() -> Section {
   Section(id: "section") {

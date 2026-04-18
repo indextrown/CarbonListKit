@@ -12,7 +12,7 @@ CarbonListKit은 선언형 `List`, `Section`, `Row`, `Component`로 `UICollectio
 | --- | --- |
 | Platform | iOS 13+ |
 | Language | Swift 5.9+ |
-| UI framework | UIKit |
+| UI framework | UIKit, SwiftUI bridge |
 | Package manager | Swift Package Manager |
 | Diff engine | DifferenceKit |
 
@@ -127,11 +127,40 @@ struct PostComponent: ListComponent {
 }
 ```
 
+### SwiftUI에서 사용
+
+`CarbonList`는 기존 `ListAdapter`를 SwiftUI에서 사용할 수 있게 감싼 view입니다. 내부 렌더링, diff update, layout 처리는 UIKit 어댑터가 그대로 담당합니다.
+
+```swift
+import CarbonListKit
+import SwiftUI
+
+struct FeedScreen: View {
+  let posts: [Post]
+
+  var body: some View {
+    CarbonList(updateStrategy: .animated, backgroundColor: .systemGroupedBackground) {
+      Section(id: "posts") {
+        for post in posts {
+          Row(
+            id: post.id,
+            component: PostComponent(viewModel: .init(post: post))
+          )
+        }
+      }
+      .layout(.vertical(spacing: 10))
+      .contentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
+    }
+  }
+}
+```
+
 ## 핵심 모델
 
 | 타입 | 역할 | 주로 쓰는 API |
 | --- | --- | --- |
 | `ListAdapter` | `UICollectionView`의 data source, delegate, layout, update 적용을 담당합니다. | `apply`, `snapshot`, `configuration` |
+| `CarbonList` | SwiftUI에서 같은 List DSL을 사용할 수 있게 `ListAdapter`를 감싼 view입니다. | `CarbonList { ... }` |
 | `List` | collection view 전체 snapshot입니다. 여러 `Section`을 가집니다. | `List { ... }`, `onReachEnd` |
 | `Section` | row 묶음과 section 단위 layout, inset, header/footer를 가집니다. | `layout`, `contentInsets`, `sectionInsets`, `sectionSpacing`, `header`, `footer` |
 | `Row` | collection view item 하나입니다. id와 component, row 이벤트를 가집니다. | `onSelect`, `onDisplay`, `onEndDisplay` |
@@ -168,6 +197,7 @@ struct PostComponent: ListComponent {
 | layout context | custom layout에서 section, index, environment를 참조합니다. | `ListLayoutContext` |
 | section header/footer | row가 아닌 실제 supplementary view로 header/footer를 렌더링합니다. | `Header`, `Footer` |
 | SwiftUI 스타일 section DSL | rows를 먼저 쓰고 아래에 `header`/`footer` trailing closure를 붙일 수 있습니다. | `Section { ... } header: { ... } footer: { ... }` |
+| SwiftUI bridge | SwiftUI 화면에서 같은 `List`, `Section`, `Row` DSL을 사용합니다. | `CarbonList`, `CarbonListView` |
 | row 선택 이벤트 | 선택된 row의 id, indexPath, cell, contentView를 받습니다. | `onSelect`, `didSelect` |
 | row 표시 이벤트 | cell 표시 시작 시점을 받습니다. | `onDisplay`, `willDisplay` |
 | row 표시 종료 이벤트 | cell 표시 종료 시점을 받습니다. | `onEndDisplay` |
@@ -632,6 +662,7 @@ Example/
 | `Prefetch` | collection view가 아이템을 prefetch할 때 이미지를 미리 로드하고 캐시에 저장합니다. prefetch된 이미지는 즉시 표시되어 부드러운 스크롤을 제공합니다. |
 | `Header & Footer` | 실제 supplementary header/footer, section spacing, grid와 함께 쓰는 예제를 보여줍니다. |
 | `Header & Footer DSL` | `Section { rows } header: { ... } footer: { ... }` 문법과 inset modifier 차이를 보여줍니다. |
+| `SwiftUI CarbonList` | SwiftUI 화면에서 `CarbonList { Section { Row } }` DSL을 직접 쓰는 예제를 보여줍니다. |
 | `한글 종합 예제` | diff, ViewModel, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
 
 빌드:
@@ -675,7 +706,10 @@ CarbonListKit은 KarrotListKit, IGListKit, Airbnb Epoxy, DifferenceKit 같은 co
 ```mermaid
 graph TD
   App["App / ViewController"] --> Adapter["ListAdapter"]
+  SwiftUIView["SwiftUI View"] --> CarbonList["CarbonList / CarbonListView"]
+  CarbonList --> Adapter
   App --> ListDSL["List DSL"]
+  SwiftUIView --> ListDSL
 
   ListDSL --> List["List"]
   List --> Section["Section"]

@@ -9,6 +9,7 @@ import Combine
 /// UICollectionView와 List 모델을 연결하여 데이터를 표시하고 업데이트합니다.
 /// 차등 업데이트를 지원하여 효율적인 UI 갱신을 제공합니다.
 public final class ListAdapter: NSObject {
+  private static let estimatedItemHeight: CGFloat = 80
   private static let sectionSpacingElementKind = "CarbonListKit.SectionSpacing"
   private static let sectionSpacingReuseIdentifier = "CarbonListKit.SectionSpacing"
 
@@ -676,7 +677,7 @@ public final class ListAdapter: NSObject {
   ) -> NSCollectionLayoutSection {
     let itemSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1),
-      heightDimension: .estimated(44)
+      heightDimension: .estimated(Self.estimatedItemHeight)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemSize)
     let group = NSCollectionLayoutGroup.vertical(
@@ -699,13 +700,13 @@ public final class ListAdapter: NSObject {
     let columns = max(columns, 1)
     let itemSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1),
-      heightDimension: .estimated(44)
+      heightDimension: .estimated(Self.estimatedItemHeight)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemSize)
 
     let groupSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1),
-      heightDimension: .estimated(44)
+      heightDimension: .estimated(Self.estimatedItemHeight)
     )
     let group = NSCollectionLayoutGroup.horizontal(
       layoutSize: groupSize,
