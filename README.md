@@ -1,0 +1,517 @@
+# CarbonListKit
+
+[English](README.en.md) | 한국어
+
+CarbonListKit은 선언형 `List`, `Section`, `Row`, `Component`로 `UICollectionView` 화면을 구성하는 UIKit 리스트 어댑터입니다.
+
+반복되는 cell 등록, data source/delegate 연결, diff update, compositional layout 구성, selection/display 이벤트 처리를 ViewController 밖으로 밀어내고, 화면은 “현재 보여줄 목록 상태”만 선언하도록 돕습니다.
+
+## 요구사항
+
+| 항목 | 값 |
+| --- | --- |
+| Platform | iOS 13+ |
+| Language | Swift 5.9+ |
+| UI framework | UIKit |
+| Package manager | Swift Package Manager |
+| Diff engine | DifferenceKit |
+
+## 설치
+
+Swift Package dependency로 추가합니다.
+
+```swift
+.package(url: "<repository-url>", branch: "main")
+```
+
+로컬 개발에서는 예제 앱이 루트 패키지를 직접 참조합니다.
+
+```text
+Example/CarbonListKitExample.xcodeproj
+  -> local package ../
+  -> product CarbonListKit
+```
+
+## 빠른 시작
+
+```swift
+import CarbonListKit
+import UIKit
+
+final class FeedViewController: UIViewController {
+  private let collectionView = UICollectionView(
+    frame: .zero,
+    collectionViewLayout: UICollectionViewLayout()
+  )
+
+  private lazy var adapter = ListAdapter(collectionView: collectionView)
+  private var posts = Post.samplePosts
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+
+    view.backgroundColor = .systemBackground
+    collectionView.backgroundColor = .systemGroupedBackground
+    collectionView.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(collectionView)
+
+    NSLayoutConstraint.activate([
+      collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+      collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+    ])
+
+    render()
+  }
+
+  private func render() {
+    adapter.apply(updateStrategy: .animated) {
+      Section(id: "posts") {
+        for post in posts {
+          Row(
+            id: post.id,
+            component: PostComponent(viewModel: .init(post: post))
+          )
+          .onSelect { [weak self] _ in
+            self?.toggleRead(postID: post.id)
+          }
+        }
+      }
+      .layout(.vertical(spacing: 10))
+      .contentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
+    }
+  }
+
+  private func toggleRead(postID: Post.ID) {
+    posts = posts.map { post in
+      post.id == postID ? post.togglingRead() : post
+    }
+    render()
+  }
+}
+```
+
+Component는 UIKit view를 만들고 업데이트하는 작은 렌더링 단위입니다.
+
+```swift
+struct PostComponent: ListComponent {
+  struct ViewModel: Equatable {
+    let title: String
+    let subtitle: String
+    let readStateTitle: String
+    let readStateColor: UIColor
+
+    init(post: Post) {
+      self.title = post.title
+      self.subtitle = "\(post.author) · \(post.readTimeMinutes)분"
+      self.readStateTitle = post.isRead ? "읽음" : "안 읽음"
+      self.readStateColor = post.isRead ? .systemGray : .systemGreen
+    }
+  }
+
+  let viewModel: ViewModel
+
+  func makeView(context: ListComponentContext<Void>) -> PostRowView {
+    PostRowView()
+  }
+
+  func updateView(_ view: PostRowView, context: ListComponentContext<Void>) {
+    view.configure(
+      title: viewModel.title,
+      subtitle: viewModel.subtitle,
+      readStateTitle: viewModel.readStateTitle,
+      readStateColor: viewModel.readStateColor
+    )
+  }
+}
+```
+
+## 핵심 모델
+
+| 타입 | 역할 | 주로 쓰는 API |
+| --- | --- | --- |
+| `ListAdapter` | `UICollectionView`의 data source, delegate, layout, update 적용을 담당합니다. | `apply`, `snapshot`, `configuration` |
+| `List` | collection view 전체 snapshot입니다. 여러 `Section`을 가집니다. | `List { ... }`, `onReachEnd` |
+| `Section` | row 묶음과 section 단위 layout/content inset을 가집니다. | `layout`, `contentInsets`, `withSectionLayout`, `withSectionContentInsets` |
+| `Row` | collection view item 하나입니다. id와 component, row 이벤트를 가집니다. | `onSelect`, `onDisplay`, `onEndDisplay` |
+| `Cell` | `Row`와 같은 타입입니다. cell 중심 네이밍을 선호할 때 씁니다. | `didSelect`, `willDisplay` |
+| `ListComponent` | 앱 데이터를 UIKit view로 렌더링합니다. | `makeView`, `updateView`, `layoutView`, `makeCoordinator` |
+| `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality와 reuse identifier를 관리합니다. | `reuseIdentifier` |
+| `ListComponentContext` | component의 coordinator를 view 생성/업데이트에 전달합니다. | `context.coordinator` |
+| `ListLayout` | section별 compositional layout 방식을 표현합니다. | `.vertical`, `.grid`, `.custom` |
+
+## 제공 기능
+
+| 기능 | 설명 | 주요 API |
+| --- | --- | --- |
+| 선언형 목록 구성 | ViewController에서 collection view 상태를 `List`, `Section`, `Row`로 선언합니다. | `List {}`, `Section {}`, `Row(...)` |
+| Result Builder | `if`, `for`, 배열 표현식을 사용해 section/row를 만들 수 있습니다. | `@ListBuilder`, `@RowsBuilder` |
+| 자동 cell 등록 | component reuse identifier를 기준으로 필요한 cell을 자동 등록합니다. | `ListComponent.reuseIdentifier` |
+| data source 소유 | adapter가 item 개수와 cell dequeue/render를 처리합니다. | `ListAdapter(collectionView:)` |
+| delegate 소유 | selection, display, scroll 이벤트를 adapter가 받아 row/list 이벤트로 전달합니다. | `ListAdapter` |
+| UIKit view component | 각 row는 일반 `UIView` 기반 component로 렌더링됩니다. | `ListComponent` |
+| Auto Layout 렌더링 | 기본적으로 component view를 cell content view edge에 고정합니다. | `layoutView` |
+| self-sizing cell | component view의 Auto Layout 크기를 collection view cell 크기에 반영합니다. | `ComponentCell` |
+| coordinator | component가 재사용되는 동안 유지할 상태 객체를 만들 수 있습니다. | `makeCoordinator`, `ListComponentContext` |
+| reuse identifier override | 같은 component type을 여러 cell 종류로 나누어 등록할 수 있습니다. | `var reuseIdentifier` |
+| diff update | DifferenceKit으로 section/row 삽입, 삭제, 이동, 업데이트를 적용합니다. | `adapter.apply(updateStrategy:)` |
+| update strategy | animated, nonAnimated, reloadData 중 적용 방식을 선택합니다. | `UpdateStrategy` |
+| apply completion | list 적용이 끝난 뒤 후처리를 실행합니다. | `completion` |
+| update queue | 업데이트 중 다시 `apply`하면 마지막 요청을 보관했다가 이어서 적용합니다. | last-write-wins |
+| snapshot 조회 | 현재 적용된 list 상태를 가져옵니다. | `adapter.snapshot()` |
+| vertical layout | 세로 리스트 section을 만듭니다. | `.layout(.vertical(spacing:))` |
+| grid layout | 지정한 열 수의 grid section을 만듭니다. | `.layout(.grid(columns:itemSpacing:lineSpacing:))` |
+| custom layout | 직접 만든 `NSCollectionLayoutSection`을 section에 적용합니다. | `.layout(.custom { context in ... })` |
+| layout context | custom layout에서 section, index, environment를 참조합니다. | `ListLayoutContext` |
+| section content inset | section별 content inset을 지정합니다. | `.contentInsets(...)` |
+| compatibility modifier | 다른 list DSL에 익숙한 naming도 제공합니다. | `withSectionLayout`, `withSectionContentInsets` |
+| row 선택 이벤트 | 선택된 row의 id, indexPath, cell, contentView를 받습니다. | `onSelect`, `didSelect` |
+| row 표시 이벤트 | cell 표시 시작 시점을 받습니다. | `onDisplay`, `willDisplay` |
+| row 표시 종료 이벤트 | cell 표시 종료 시점을 받습니다. | `onEndDisplay` |
+| reach-end 이벤트 | 끝 근처 도달 시 무한 스크롤/다음 페이지 로딩을 실행합니다. | `List.onReachEnd` |
+| horizontal scroll 감지 | collection view scroll direction에 따라 reach-end 기준 축을 바꿉니다. | `ReachEndOffset` |
+| SwiftUI 예제 앱 | SwiftUI app entry에서 UIKit view controller 예제를 표시합니다. | `UIViewControllerRepresentable` |
+
+## 아직 제공하지 않는 기능
+
+| 기능 | 상태 |
+| --- | --- |
+| supplementary header/footer | 예정 |
+| orthogonal section scrolling | 예정 |
+| refresh control wrapper | 예정 |
+| prefetch event | 예정 |
+| size cache | 예정 |
+| DocC 문서 | 예정 |
+
+## 사용법
+
+### 1. Adapter 만들기
+
+`ListAdapter`는 collection view의 `dataSource`, `delegate`, `collectionViewLayout`을 설정합니다. adapter를 만든 뒤 같은 collection view의 `dataSource`나 `delegate`를 직접 덮어쓰지 마세요.
+
+```swift
+private lazy var adapter = ListAdapter(
+  collectionView: collectionView,
+  configuration: .init(batchUpdateInterruptCount: 200)
+)
+```
+
+`batchUpdateInterruptCount`보다 변경량이 크면 animated diff 대신 `reloadData`로 우회합니다.
+
+### 2. List 적용하기
+
+```swift
+adapter.apply(updateStrategy: .animated) {
+  Section(id: "main") {
+    Row(id: "title", component: TitleComponent(viewModel: title))
+    Row(id: "summary", component: SummaryComponent(viewModel: summary))
+  }
+}
+```
+
+`List`를 직접 만들어 전달할 수도 있습니다.
+
+```swift
+let list = List {
+  Section(id: "main") {
+    Row(id: "row", component: RowComponent(viewModel: model))
+  }
+}
+
+adapter.apply(list, updateStrategy: .nonAnimated) {
+  print("적용 완료")
+}
+```
+
+### 3. Section layout 지정하기
+
+세로 목록:
+
+```swift
+Section(id: "feed") {
+  for item in items {
+    Row(id: item.id, component: FeedComponent(viewModel: .init(item: item)))
+  }
+}
+.layout(.vertical(spacing: 12))
+.contentInsets(.init(top: 16, leading: 0, bottom: 16, trailing: 0))
+```
+
+2열 grid:
+
+```swift
+Section(id: "actions") {
+  Cell(id: "add", component: ActionComponent(viewModel: add))
+  Cell(id: "shuffle", component: ActionComponent(viewModel: shuffle))
+}
+.layout(.grid(columns: 2, itemSpacing: 10, lineSpacing: 10))
+.contentInsets(.init(top: 0, leading: 16, bottom: 16, trailing: 16))
+```
+
+custom compositional layout:
+
+```swift
+Section(id: "custom") {
+  Row(id: "note", component: NoteComponent(viewModel: note))
+}
+.layout(.custom { context in
+  let itemSize = NSCollectionLayoutSize(
+    widthDimension: .fractionalWidth(1),
+    heightDimension: .estimated(44)
+  )
+  let item = NSCollectionLayoutItem(layoutSize: itemSize)
+  let group = NSCollectionLayoutGroup.vertical(layoutSize: itemSize, subitems: [item])
+  let section = NSCollectionLayoutSection(group: group)
+  section.interGroupSpacing = CGFloat(8 + context.sectionIndex)
+  return section
+})
+```
+
+### 4. Row 이벤트 받기
+
+```swift
+Row(id: post.id, component: PostComponent(viewModel: .init(post: post)))
+  .onSelect { context in
+    print(context.rowID, context.indexPath)
+  }
+  .onDisplay { context in
+    print("display", context.contentView as Any)
+  }
+  .onEndDisplay { context in
+    print("end", context.cell as Any)
+  }
+```
+
+`Cell` alias를 사용할 때는 호환 naming도 쓸 수 있습니다.
+
+```swift
+Cell(id: "cell", component: CellComponent(viewModel: model))
+  .didSelect { context in
+    print(context.indexPath)
+  }
+  .willDisplay { context in
+    print(context.rowID)
+  }
+```
+
+`RowEventContext`가 제공하는 값:
+
+| 값 | 설명 |
+| --- | --- |
+| `indexPath` | 이벤트가 발생한 item 위치 |
+| `rowID` | 선언한 `Row.id` |
+| `component` | 현재 row의 type-erased component |
+| `collectionView` | 이벤트를 보낸 collection view |
+| `cell` | 이벤트 대상 cell |
+| `contentView` | component가 렌더링한 UIKit view |
+
+### 5. 무한 스크롤 만들기
+
+`onReachEnd`는 `List` modifier입니다. builder overload 안에서 바로 붙이는 대신 `List { ... }`를 만들고 `adapter.apply(_:)`로 전달합니다.
+
+```swift
+adapter.apply(
+  List {
+    Section(id: "feed") {
+      for item in items {
+        Row(id: item.id, component: FeedItemComponent(viewModel: .init(item: item)))
+      }
+    }
+    .layout(.vertical(spacing: 10))
+  }
+  .onReachEnd(offsetFromEnd: .relativeToContainerSize(multiplier: 1.0)) { [weak self] _ in
+    self?.loadNextPageIfNeeded()
+  },
+  updateStrategy: .animated
+)
+```
+
+`onReachEnd`는 끝 근처에 머무르는 동안 여러 번 호출될 수 있으므로 loading flag를 두는 것이 좋습니다.
+
+```swift
+private var isLoadingNextPage = false
+
+private func loadNextPageIfNeeded() {
+  guard isLoadingNextPage == false else {
+    return
+  }
+
+  isLoadingNextPage = true
+  fetchNextPage { [weak self] newItems in
+    guard let self else {
+      return
+    }
+
+    self.items.append(contentsOf: newItems)
+    self.isLoadingNextPage = false
+    self.render()
+  }
+}
+```
+
+지원하는 offset:
+
+| Offset | 설명 |
+| --- | --- |
+| `.relativeToContainerSize(multiplier:)` | collection view 길이에 multiplier를 곱한 거리 이내에서 호출 |
+| `.absolute(_:)` | point 단위 고정 거리 이내에서 호출 |
+
+## 업데이트 전략
+
+| 전략 | 동작 | 사용하기 좋은 상황 |
+| --- | --- | --- |
+| `.animated` | DifferenceKit staged changeset을 `performBatchUpdates`로 적용합니다. | 일반적인 삽입, 삭제, 이동, 내용 변경 |
+| `.nonAnimated` | 같은 diff 경로를 사용하지만 UIKit 애니메이션을 끄고 적용합니다. | 즉시 반영되어야 하는 필터/정렬 변경 |
+| `.reloadData` | diff 없이 전체 collection view를 다시 로드합니다. | 변경량이 매우 크거나 상태를 강제로 리셋할 때 |
+
+Diff 기준:
+
+| 대상 | 기준 |
+| --- | --- |
+| Section identity | `Section.id` |
+| Row identity | `Row.id` |
+| Row content equality | component type + component view model equality |
+
+같은 row identity를 유지한 채 component `ViewModel`만 바꾸면 “내용 업데이트”로 처리됩니다.
+
+```swift
+posts = posts.map { post in
+  post.id == selectedID ? post.togglingRead() : post
+}
+
+render()
+```
+
+## Component 작성 가이드
+
+앱/domain entity와 component `ViewModel`은 분리하는 것을 권장합니다.
+
+```swift
+struct Article: Identifiable, Equatable {
+  let id: String
+  let title: String
+  let author: String
+  let readTimeMinutes: Int
+  let isRead: Bool
+}
+```
+
+```swift
+struct ArticleRowComponent: ListComponent {
+  struct ViewModel: Equatable {
+    let title: String
+    let metadata: String
+    let readStateTitle: String
+    let readStateColor: UIColor
+
+    init(article: Article) {
+      self.title = article.title
+      self.metadata = "\(article.author) · \(article.readTimeMinutes)분"
+      self.readStateTitle = article.isRead ? "읽음" : "안 읽음"
+      self.readStateColor = article.isRead ? .systemGray : .systemGreen
+    }
+  }
+
+  let viewModel: ViewModel
+
+  func makeView(context: ListComponentContext<Void>) -> ArticleRowView {
+    ArticleRowView()
+  }
+
+  func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
+    view.configure(
+      title: viewModel.title,
+      metadata: viewModel.metadata,
+      readStateTitle: viewModel.readStateTitle,
+      readStateColor: viewModel.readStateColor
+    )
+  }
+}
+```
+
+기본 layout은 component view를 cell content view edge에 고정합니다. 여백이나 wrapper가 필요하면 `layoutView`를 override합니다.
+
+```swift
+func layoutView(_ view: ArticleRowView, in container: UIView) {
+  view.translatesAutoresizingMaskIntoConstraints = false
+  container.addSubview(view)
+  NSLayoutConstraint.activate([
+    view.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+    view.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+    view.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+    view.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -8)
+  ])
+}
+```
+
+component가 상태 객체를 가져야 한다면 coordinator를 사용합니다.
+
+```swift
+struct TimerComponent: ListComponent {
+  struct ViewModel: Equatable {
+    let title: String
+  }
+
+  final class Coordinator {
+    var renderCount = 0
+  }
+
+  let viewModel: ViewModel
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator()
+  }
+
+  func makeView(context: ListComponentContext<Coordinator>) -> TimerView {
+    TimerView()
+  }
+
+  func updateView(_ view: TimerView, context: ListComponentContext<Coordinator>) {
+    context.coordinator.renderCount += 1
+    view.configure(title: viewModel.title, renderCount: context.coordinator.renderCount)
+  }
+}
+```
+
+## 예제 앱
+
+저장소에는 SwiftUI entry point에서 UIKit view controller를 표시하는 예제 앱이 포함되어 있습니다.
+
+```text
+Example/
+  CarbonListKitExample.xcodeproj
+  CarbonListKitExample/
+```
+
+| 예제 | 설명 |
+| --- | --- |
+| `Diff updates` | row 추가, 셔플, 내용 업데이트와 animated diff를 보여줍니다. |
+| `Entity to ViewModel` | domain entity와 component ViewModel 분리, 업데이트 전략, layout modifier를 보여줍니다. |
+| `Infinite Scroll` | `onReachEnd`로 다음 페이지를 append합니다. |
+| `한글 종합 예제` | diff, ViewModel, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
+
+빌드:
+
+```bash
+xcodebuild -project Example/CarbonListKitExample.xcodeproj \
+  -scheme CarbonListKitExample \
+  -sdk iphonesimulator \
+  -derivedDataPath /tmp/CarbonListKitExampleDerivedData \
+  build
+```
+
+## 검증
+
+동작 확인에 사용할 수 있는 명령어:
+
+```bash
+swift build
+swift test
+swift build --sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.4.sdk --triple arm64-apple-ios13.0-simulator
+xcodebuild -project Example/CarbonListKitExample.xcodeproj -scheme CarbonListKitExample -sdk iphonesimulator -derivedDataPath /tmp/CarbonListKitExampleDerivedData build
+```
+
+## Inspiration
+
+CarbonListKit은 KarrotListKit, IGListKit, Airbnb Epoxy, DifferenceKit 같은 component 기반 리스트 프레임워크에서 영감을 받았습니다.
