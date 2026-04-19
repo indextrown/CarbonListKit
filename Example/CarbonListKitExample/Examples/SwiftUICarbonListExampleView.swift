@@ -7,6 +7,12 @@ struct SwiftUICarbonListExampleView: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      SwiftUIExampleBridgeComponent(
+        viewModel: .init(
+          title: "SwiftUIComponent bridge",
+          subtitle: "A single component can render as SwiftUI View and still back a UIKit list cell."
+        )
+      )
       controlBar
 
       CarbonList(updateStrategy: .animated, backgroundColor: .systemGroupedBackground) {
@@ -119,6 +125,41 @@ struct SwiftUICarbonListExampleView: View {
     }
 
     items = shuffledItems
+  }
+}
+
+private struct SwiftUIExampleBridgeComponent: SwiftUIComponent {
+  struct ViewModel: Equatable {
+    let title: String
+    let subtitle: String
+  }
+
+  let viewModel: ViewModel
+
+  func makeSwiftUIView() -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(viewModel.title)
+        .font(.headline)
+      Text(viewModel.subtitle)
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(16)
+    .background(
+      RoundedRectangle(cornerRadius: 20, style: .continuous)
+        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+    )
+    .padding(.horizontal, 16)
+    .padding(.top, 12)
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> SwiftUIExampleSummaryView {
+    SwiftUIExampleSummaryView()
+  }
+
+  func updateView(_ view: SwiftUIExampleSummaryView, context: ListComponentContext<Void>) {
+    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
   }
 }
 

@@ -15,7 +15,7 @@ It removes repeated collection view boilerplate from view controllers:
 - compositional layout setup
 - list reach-end events
 
-The current implementation covers the core list adapter, SwiftUI bridge, supplementary header/footer support, prefetching, orthogonal sections, and the example app. Refresh control wrappers and DocC documentation are planned next.
+The current implementation covers the core list adapter, SwiftUI bridge, SwiftUI component bridge, supplementary header/footer support, prefetching, orthogonal sections, and the example app. Refresh control wrappers and DocC documentation are planned next.
 
 ## Requirements
 
@@ -122,6 +122,35 @@ struct FeedScreen: View {
   }
 }
 ```
+
+### Using a Component Directly in SwiftUI
+
+If a component conforms to `SwiftUIComponent`, the same type can be used directly as a SwiftUI `View`.
+
+```swift
+struct SampleComponent: SwiftUIComponent {
+  struct ViewModel: Equatable {
+    let title: String
+  }
+
+  let viewModel: ViewModel
+
+  func makeSwiftUIView() -> some View {
+    Text(viewModel.title)
+      .font(.headline)
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> SampleUIKitView {
+    SampleUIKitView()
+  }
+
+  func updateView(_ view: SampleUIKitView, context: ListComponentContext<Void>) {
+    view.configure(title: viewModel.title)
+  }
+}
+```
+
+Now the same component can be used directly in a SwiftUI screen as `SampleComponent(viewModel: ...)`, while still being reused inside CarbonListKit's UIKit list rendering.
 
 ## Core Concepts
 
@@ -736,6 +765,8 @@ Implemented:
 - SwiftUI bridge
   - `CarbonList`
   - `CarbonListView`
+- SwiftUI component bridge
+  - `SwiftUIComponent`
 - `List`
 - `Section`
 - `Row`

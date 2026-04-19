@@ -155,6 +155,35 @@ struct FeedScreen: View {
 }
 ```
 
+### SwiftUIComponent로 컴포넌트 직접 쓰기
+
+`SwiftUIComponent`를 채택하면 같은 컴포넌트를 SwiftUI `View`로도 바로 사용할 수 있습니다.
+
+```swift
+struct SampleComponent: SwiftUIComponent {
+  struct ViewModel: Equatable {
+    let title: String
+  }
+
+  let viewModel: ViewModel
+
+  func makeSwiftUIView() -> some View {
+    Text(viewModel.title)
+      .font(.headline)
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> SampleUIKitView {
+    SampleUIKitView()
+  }
+
+  func updateView(_ view: SampleUIKitView, context: ListComponentContext<Void>) {
+    view.configure(title: viewModel.title)
+  }
+}
+```
+
+이제 SwiftUI 화면에서는 `SampleComponent(viewModel: ...)`를 바로 `View`처럼 쓸 수 있고, CarbonListKit의 UIKit 리스트 안에서도 같은 컴포넌트를 재사용할 수 있습니다.
+
 ## 핵심 모델
 
 | 타입 | 역할 | 주로 쓰는 API |
@@ -166,6 +195,7 @@ struct FeedScreen: View {
 | `Row` | collection view item 하나입니다. id와 component, row 이벤트를 가집니다. | `onSelect`, `onDisplay`, `onEndDisplay` |
 | `Cell` | `Row`와 같은 타입입니다. cell 중심 네이밍을 선호할 때 씁니다. | `didSelect`, `willDisplay` |
 | `ListComponent` | 앱 데이터를 UIKit view로 렌더링합니다. | `makeView`, `updateView`, `layoutView`, `height`, `makeCoordinator` |
+| `SwiftUIComponent` | 같은 컴포넌트를 SwiftUI `View`로도 직접 사용합니다. | `makeSwiftUIView`, `body` |
 | `ListComponentHeight` | component가 row 높이를 자동 측정할지 직접 지정할지 표현합니다. | `.automatic`, `.absolute(...)` |
 | `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality, reuse identifier, height를 관리합니다. | `reuseIdentifier`, `height` |
 | `ListComponentContext` | component의 coordinator를 view 생성/업데이트에 전달합니다. | `context.coordinator` |
