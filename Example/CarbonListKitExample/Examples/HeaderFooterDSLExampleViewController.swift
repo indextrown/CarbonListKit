@@ -37,18 +37,18 @@ final class HeaderFooterDSLExampleViewController: UIViewController {
       Section {
         Row(
           id: "content-1",
-          component: DSLRowComponent(viewModel: .init(title: "내용 1"))
+          component: DSLRowComponent(content: .init(title: "내용 1"))
         )
 
         Row(
           id: "content-2",
-          component: DSLRowComponent(viewModel: .init(title: "내용 2"))
+          component: DSLRowComponent(content: .init(title: "내용 2"))
         )
       } header: {
         Header(
           id: "header",
           component: DSLSupplementaryComponent(
-            viewModel: .init(
+            content: .init(
               title: "헤더",
               message: "rows 아래에 header 클로저를 붙입니다.",
               style: .header
@@ -59,7 +59,7 @@ final class HeaderFooterDSLExampleViewController: UIViewController {
         Footer(
           id: "footer",
           component: DSLSupplementaryComponent(
-            viewModel: .init(
+            content: .init(
               title: "푸터",
               message: "footer 클로저도 같은 위치에 이어서 작성합니다.",
               style: .footer
@@ -75,14 +75,14 @@ final class HeaderFooterDSLExampleViewController: UIViewController {
         for index in 1...4 {
           Row(
             id: "grid-\(index)",
-            component: DSLGridComponent(viewModel: .init(title: "Grid \(index)"))
+            component: DSLGridComponent(content: .init(title: "Grid \(index)"))
           )
         }
       } header: {
         Header(
           id: "grid-header",
           component: DSLSupplementaryComponent(
-            viewModel: .init(
+            content: .init(
               title: "Grid 헤더",
               message: "grid layout에서도 같은 DSL을 사용합니다.",
               style: .header
@@ -93,7 +93,7 @@ final class HeaderFooterDSLExampleViewController: UIViewController {
         Footer(
           id: "grid-footer",
           component: DSLSupplementaryComponent(
-            viewModel: .init(
+            content: .init(
               title: "Grid 푸터",
               message: "itemSpacing은 item 사이 간격만 담당합니다.",
               style: .footer
@@ -118,20 +118,20 @@ private struct DSLSupplementaryComponent: ListComponent {
     case footer
   }
 
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let message: String
     let style: Style
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> DSLSupplementaryView {
     DSLSupplementaryView()
   }
 
   func updateView(_ view: DSLSupplementaryView, context: ListComponentContext<Void>) {
-    view.configure(viewModel)
+    view.configure(content)
   }
 }
 
@@ -150,11 +150,11 @@ private final class DSLSupplementaryView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
 
-  func configure(_ viewModel: DSLSupplementaryComponent.ViewModel) {
-    titleLabel.text = viewModel.title
-    messageLabel.text = viewModel.message
+  func configure(_ content: DSLSupplementaryComponent.Content) {
+    titleLabel.text = content.title
+    messageLabel.text = content.message
 
-    switch viewModel.style {
+    switch content.style {
     case .header:
       backgroundColor = .systemTeal.withAlphaComponent(0.14)
       titleLabel.textColor = .label
@@ -192,18 +192,18 @@ private final class DSLSupplementaryView: UIView {
 }
 
 private struct DSLRowComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> DSLRowView {
     DSLRowView()
   }
 
   func updateView(_ view: DSLRowView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 
@@ -243,18 +243,18 @@ private final class DSLRowView: UIView {
 }
 
 private struct DSLGridComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> DSLGridView {
     DSLGridView()
   }
 
   func updateView(_ view: DSLGridView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 

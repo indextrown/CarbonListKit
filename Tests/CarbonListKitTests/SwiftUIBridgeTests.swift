@@ -10,7 +10,7 @@ struct SwiftUIImportCompatibilityTests {
   func carbonListDSLCompilesWithSwiftUIImported() {
     let view = CarbonList {
       Section(id: "swiftui") {
-        Row(id: "row", component: SwiftUITestComponent(viewModel: .init(text: "SwiftUI")))
+        Row(id: "row", component: SwiftUITestComponent(content: .init(text: "SwiftUI")))
       }
     }
 
@@ -19,18 +19,18 @@ struct SwiftUIImportCompatibilityTests {
 }
 
 private struct SwiftUITestComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let text: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> UILabel {
     UILabel()
   }
 
   func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
-    view.text = viewModel.text
+    view.text = content.text
   }
 }
 #endif

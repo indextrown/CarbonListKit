@@ -15,7 +15,7 @@ final class HeaderFooterExampleViewController: UIViewController {
   // Update 버튼을 누르면 순서를 섞어서 diff update가 동작하는지 볼 수 있습니다.
   private var items = HeaderFooterItem.samples
 
-  // footer의 viewModel과 layoutSize를 바꿔서 supplementary 업데이트를 보여줍니다.
+  // footer의 content과 layoutSize를 바꿔서 supplementary 업데이트를 보여줍니다.
   private var isCompactFooter = false
 
   override func viewDidLoad() {
@@ -56,7 +56,7 @@ final class HeaderFooterExampleViewController: UIViewController {
         for item in items {
           Row(
             id: item.id,
-            component: HeaderFooterRowComponent(viewModel: .init(item: item))
+            component: HeaderFooterRowComponent(content: .init(item: item))
           )
         }
       } header: {
@@ -65,7 +65,7 @@ final class HeaderFooterExampleViewController: UIViewController {
         Header(
           id: "main-header",
           component: HeaderFooterBannerComponent(
-            viewModel: .init(
+            content: .init(
               title: "Featured",
               subtitle: "\(items.count) rows rendered between a real section header and footer.",
               style: .header
@@ -78,7 +78,7 @@ final class HeaderFooterExampleViewController: UIViewController {
         Footer(
           id: "main-footer",
           component: HeaderFooterBannerComponent(
-            viewModel: .init(
+            content: .init(
               title: isCompactFooter ? "Footer updated" : "Footer",
               subtitle: "This view is a supplementary footer, not the last cell.",
               style: .footer
@@ -101,7 +101,7 @@ final class HeaderFooterExampleViewController: UIViewController {
           Row(
             id: "grid-\(number)",
             component: HeaderFooterPillComponent(
-              viewModel: .init(title: "Item \(number)")
+              content: .init(title: "Item \(number)")
             )
           )
         }
@@ -109,7 +109,7 @@ final class HeaderFooterExampleViewController: UIViewController {
         Header(
           id: "grid-header",
           component: HeaderFooterBannerComponent(
-            viewModel: .init(
+            content: .init(
               title: "Grid section",
               subtitle: "Headers work with grid layouts too.",
               style: .header
@@ -146,7 +146,7 @@ private struct HeaderFooterItem: Equatable, Identifiable {
 
   static let samples = [
     HeaderFooterItem(id: 1, title: "Reusable models", detail: "Header and footer use the same ListComponent protocol."),
-    HeaderFooterItem(id: 2, title: "Diff friendly", detail: "Changing supplementary view models updates the owning section."),
+    HeaderFooterItem(id: 2, title: "Diff friendly", detail: "Changing supplementary content updates the owning section."),
     HeaderFooterItem(id: 3, title: "Estimated height", detail: "Auto Layout can drive supplementary view height."),
     HeaderFooterItem(id: 4, title: "Layout size", detail: "Use estimated or absolute height per header and footer.")
   ]
@@ -161,23 +161,23 @@ private struct HeaderFooterBannerComponent: ListComponent {
     case footer
   }
 
-  // ViewModel이 Equatable이라서 값이 바뀌면 CarbonListKit이 변경을 감지할 수 있습니다.
-  struct ViewModel: Equatable {
+  // Content이 Equatable이라서 값이 바뀌면 CarbonListKit이 변경을 감지할 수 있습니다.
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let style: Style
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   // component가 처음 렌더링될 때 view를 만듭니다.
   func makeView(context: ListComponentContext<Void>) -> HeaderFooterBannerView {
     HeaderFooterBannerView()
   }
 
-  // apply/render 때마다 최신 ViewModel을 view에 반영합니다.
+  // apply/render 때마다 최신 Content을 view에 반영합니다.
   func updateView(_ view: HeaderFooterBannerView, context: ListComponentContext<Void>) {
-    view.configure(viewModel)
+    view.configure(content)
   }
 }
 
@@ -198,12 +198,12 @@ private final class HeaderFooterBannerView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
 
-  func configure(_ viewModel: HeaderFooterBannerComponent.ViewModel) {
-    titleLabel.text = viewModel.title
-    subtitleLabel.text = viewModel.subtitle
+  func configure(_ content: HeaderFooterBannerComponent.Content) {
+    titleLabel.text = content.title
+    subtitleLabel.text = content.subtitle
 
     // 하나의 component/view를 header와 footer에서 재사용한다는 것을 보여주기 위한 스타일 분기입니다.
-    switch viewModel.style {
+    switch content.style {
     case .header:
       backgroundColor = .systemTeal.withAlphaComponent(0.14)
       titleLabel.textColor = .label
@@ -242,25 +242,25 @@ private final class HeaderFooterBannerView: UIView {
 
 // 본문 row에서 쓰는 component입니다.
 private struct HeaderFooterRowComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let detail: String
 
-    // domain model을 화면에 바로 필요한 ViewModel 형태로 변환합니다.
+    // domain model을 화면에 바로 필요한 Content 형태로 변환합니다.
     init(item: HeaderFooterItem) {
       self.title = item.title
       self.detail = item.detail
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> HeaderFooterRowView {
     HeaderFooterRowView()
   }
 
   func updateView(_ view: HeaderFooterRowView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, detail: viewModel.detail)
+    view.configure(title: content.title, detail: content.detail)
   }
 }
 
@@ -315,18 +315,18 @@ private final class HeaderFooterRowView: UIView {
 
 // grid 섹션 row에서 쓰는 작은 component입니다.
 private struct HeaderFooterPillComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> HeaderFooterPillView {
     HeaderFooterPillView()
   }
 
   func updateView(_ view: HeaderFooterPillView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 

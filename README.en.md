@@ -78,7 +78,7 @@ final class FeedViewController: UIViewController {
         Row(
           id: "post-1",
           component: PostComponent(
-            viewModel: .init(
+            content: .init(
               title: "Hello CarbonListKit",
               subtitle: "A UIKit row rendered from a component."
             )
@@ -112,7 +112,7 @@ struct FeedScreen: View {
         for post in posts {
           Row(
             id: post.id,
-            component: PostComponent(viewModel: .init(post: post))
+            component: PostComponent(content: .init(post: post))
           )
         }
       }
@@ -129,14 +129,14 @@ If a component conforms to `SwiftUIComponent`, the same type can be used directl
 
 ```swift
 struct SampleComponent: SwiftUIComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeSwiftUIView() -> some View {
-    Text(viewModel.title)
+    Text(content.title)
       .font(.headline)
   }
 
@@ -145,12 +145,12 @@ struct SampleComponent: SwiftUIComponent {
   }
 
   func updateView(_ view: SampleUIKitView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 ```
 
-Now the same component can be used directly in a SwiftUI screen as `SampleComponent(viewModel: ...)`, while still being reused inside CarbonListKit's UIKit list rendering.
+Now the same component can be used directly in a SwiftUI screen as `SampleComponent(content: ...)`, while still being reused inside CarbonListKit's UIKit list rendering.
 
 ## Core Concepts
 
@@ -182,7 +182,7 @@ let currentList = adapter.snapshot()
 ```swift
 let list = List {
   Section(id: "main") {
-    Row(id: "row", component: MyComponent(viewModel: model))
+    Row(id: "row", component: MyComponent(content: model))
   }
 }
 
@@ -194,7 +194,7 @@ You can also use the builder overload:
 ```swift
 adapter.apply {
   Section(id: "main") {
-    Row(id: "row", component: MyComponent(viewModel: model))
+    Row(id: "row", component: MyComponent(content: model))
   }
 }
 ```
@@ -209,7 +209,7 @@ Section(id: "articles") {
     Row(
       id: article.id,
       component: ArticleRowComponent(
-        viewModel: .init(article: article)
+        content: .init(article: article)
       )
     )
   }
@@ -243,12 +243,12 @@ Use `sectionSpacing` for the distance between the current section and the next s
 
 ```swift
 Section(id: "first") {
-  Row(id: "row", component: RowComponent(viewModel: model))
+  Row(id: "row", component: RowComponent(content: model))
 }
 .sectionSpacing(24)
 
 Section(id: "second") {
-  Row(id: "row", component: RowComponent(viewModel: model))
+  Row(id: "row", component: RowComponent(content: model))
 }
 ```
 
@@ -269,7 +269,7 @@ Orthogonal sections scroll horizontally while the overall list remains vertical.
 ```swift
 Section(id: "carousel") {
   for item in items {
-    Row(id: item.id, component: CardComponent(viewModel: .init(item: item)))
+    Row(id: item.id, component: CardComponent(content: .init(item: item)))
   }
 }
 .layout(.orthogonal(itemSpacing: 12, lineSpacing: 12, scrollingBehavior: .continuous, reservedHeight: 180))
@@ -283,17 +283,17 @@ Section(id: "carousel") {
 
 ```swift
 Section(id: "profile") {
-  Row(id: "name", component: ProfileRowComponent(viewModel: name))
-  Row(id: "email", component: ProfileRowComponent(viewModel: email))
+  Row(id: "name", component: ProfileRowComponent(content: name))
+  Row(id: "email", component: ProfileRowComponent(content: email))
 } header: {
   Header(
     id: "profile-header",
-    component: TitleComponent(viewModel: .init(title: "Profile"))
+    component: TitleComponent(content: .init(title: "Profile"))
   )
 } footer: {
   Footer(
     id: "profile-footer",
-    component: CaptionComponent(viewModel: .init(text: "You can change account details anytime."))
+    component: CaptionComponent(content: .init(text: "You can change account details anytime."))
   )
 }
 .layout(.vertical(spacing: 10))
@@ -304,10 +304,10 @@ The initializer style is still supported:
 ```swift
 Section(
   id: "profile",
-  header: Header(id: "profile-header", component: TitleComponent(viewModel: title)),
-  footer: Footer(id: "profile-footer", component: CaptionComponent(viewModel: caption))
+  header: Header(id: "profile-header", component: TitleComponent(content: title)),
+  footer: Footer(id: "profile-footer", component: CaptionComponent(content: caption))
 ) {
-  Row(id: "name", component: ProfileRowComponent(viewModel: name))
+  Row(id: "name", component: ProfileRowComponent(content: name))
 }
 ```
 
@@ -316,7 +316,7 @@ Specify `layoutSize` when a header or footer needs a custom estimated or fixed h
 ```swift
 Footer(
   id: "loading-footer",
-  component: LoadingComponent(viewModel: .init(title: "Loading more")),
+  component: LoadingComponent(content: .init(title: "Loading more")),
   layoutSize: .estimated(height: 72)
 )
 ```
@@ -326,7 +326,7 @@ Footer(
 `Row` represents one collection view item.
 
 ```swift
-Row(id: article.id, component: ArticleRowComponent(viewModel: .init(article: article)))
+Row(id: article.id, component: ArticleRowComponent(content: .init(article: article)))
   .onSelect { context in
     print(context.rowID)
   }
@@ -341,7 +341,7 @@ Row(id: article.id, component: ArticleRowComponent(viewModel: .init(article: art
 `Cell` is currently a typealias for `Row` for users who prefer cell-oriented naming:
 
 ```swift
-Cell(id: "summary", component: SummaryComponent(viewModel: summary))
+Cell(id: "summary", component: SummaryComponent(content: summary))
   .didSelect { context in
     print(context.indexPath)
   }
@@ -356,12 +356,12 @@ Components turn app data into UIKit views. They are similar in spirit to `UIView
 
 ```swift
 struct PostComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> PostView {
     PostView()
@@ -369,14 +369,14 @@ struct PostComponent: ListComponent {
 
   func updateView(_ view: PostView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle
+      title: content.title,
+      subtitle: content.subtitle
     )
   }
 }
 ```
 
-When `ViewModel` is `Equatable`, CarbonListKit can detect content changes for rows that keep the same identity.
+When `Content` is `Equatable`, CarbonListKit can detect content changes for rows that keep the same identity.
 
 The default component layout pins the view to the cell content view edges with Auto Layout.
 
@@ -399,7 +399,7 @@ Use a coordinator when a component needs an owned state object. The default coor
 
 ```swift
 struct TimerComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
@@ -407,7 +407,7 @@ struct TimerComponent: ListComponent {
     var tickCount = 0
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -419,7 +419,7 @@ struct TimerComponent: ListComponent {
 
   func updateView(_ view: TimerView, context: ListComponentContext<Coordinator>) {
     context.coordinator.tickCount += 1
-    view.configure(title: viewModel.title, tickCount: context.coordinator.tickCount)
+    view.configure(title: content.title, tickCount: context.coordinator.tickCount)
   }
 }
 ```
@@ -436,11 +436,11 @@ If a row has a known height, implement `height` on the component. If you do not 
 
 ```swift
 struct FixedArticleComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   var height: ListComponentHeight {
     .absolute(72)
@@ -451,16 +451,16 @@ struct FixedArticleComponent: ListComponent {
   }
 
   func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 ```
 
 When a component returns `.absolute`, `ComponentCell` skips `systemLayoutSizeFitting` and applies that height directly. Make sure the component view is designed for the fixed height, otherwise its content may be compressed.
 
-## Entity vs Component ViewModel
+## Entity vs Component Content
 
-App entities should stay separate from component view models.
+App entities should stay separate from component `Content`.
 
 ```swift
 struct Article: Identifiable, Equatable {
@@ -472,11 +472,11 @@ struct Article: Identifiable, Equatable {
 }
 ```
 
-`Article` is app/domain data. The component `ViewModel` is the render-ready shape for one UIKit view.
+`Article` is app/domain data. The component `Content` is the render-ready shape for one UIKit view.
 
 ```swift
 struct ArticleRowComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let metadata: String
     let readStateTitle: String
@@ -490,7 +490,7 @@ struct ArticleRowComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ArticleRowView {
     ArticleRowView()
@@ -498,10 +498,10 @@ struct ArticleRowComponent: ListComponent {
 
   func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      metadata: viewModel.metadata,
-      readStateTitle: viewModel.readStateTitle,
-      readStateColor: viewModel.readStateColor
+      title: content.title,
+      metadata: content.metadata,
+      readStateTitle: content.readStateTitle,
+      readStateColor: content.readStateColor
     )
   }
 }
@@ -524,8 +524,8 @@ Section(id: "feed") {
 
 ```swift
 Section(id: "metrics") {
-  Row(id: "one", component: MetricComponent(viewModel: one))
-  Row(id: "two", component: MetricComponent(viewModel: two))
+  Row(id: "one", component: MetricComponent(content: one))
+  Row(id: "two", component: MetricComponent(content: two))
 }
 .layout(.grid(columns: 2, itemSpacing: 10, lineSpacing: 10))
 .contentInsets(.init(top: 0, leading: 16, bottom: 16, trailing: 16))
@@ -537,7 +537,7 @@ In grid layouts, `itemSpacing` controls only the horizontal space between items.
 
 ```swift
 Section(id: "custom") {
-  Row(id: "custom-row", component: CustomComponent(viewModel: model))
+  Row(id: "custom-row", component: CustomComponent(content: model))
 }
 .layout(.custom { context in
   print(context.section.id, context.sectionIndex, context.environment.container.effectiveContentSize)
@@ -568,7 +568,7 @@ The builder overload also supports completion.
 adapter.apply(updateStrategy: .nonAnimated) {
   Section(id: "articles") {
     for article in articles {
-      Row(id: article.id, component: ArticleRowComponent(viewModel: .init(article: article)))
+      Row(id: article.id, component: ArticleRowComponent(content: .init(article: article)))
     }
   }
 } completion: {
@@ -596,7 +596,7 @@ Diff identity:
 Content equality:
 
 - row content equality uses `AnyListComponent`
-- component equality uses component type plus component view model
+- component equality uses component type plus component `Content`
 
 This means a row can keep the same identity while its component content changes.
 
@@ -610,7 +610,7 @@ adapter.apply(updateStrategy: .animated) {
     for article in articles {
       Row(
         id: article.id,
-        component: ArticleRowComponent(viewModel: .init(article: article))
+        component: ArticleRowComponent(content: .init(article: article))
       )
     }
   }
@@ -628,7 +628,7 @@ The current policy is last-write-wins.
 Row event modifiers:
 
 ```swift
-Row(id: "row", component: Component(viewModel: model))
+Row(id: "row", component: Component(content: model))
   .onSelect { context in
     print(context.indexPath)
   }
@@ -643,7 +643,7 @@ Row(id: "row", component: Component(viewModel: model))
 Compatibility names:
 
 ```swift
-Cell(id: "row", component: Component(viewModel: model))
+Cell(id: "row", component: Component(content: model))
   .didSelect { context in
     print(context.indexPath)
   }
@@ -670,7 +670,7 @@ adapter.apply(
   List {
     Section(id: "feed") {
       for item in items {
-        Row(id: item.id, component: FeedItemComponent(viewModel: .init(item: item)))
+        Row(id: item.id, component: FeedItemComponent(content: .init(item: item)))
       }
     }
     .layout(.vertical(spacing: 10))
@@ -736,14 +736,14 @@ The SwiftUI app hosts UIKit view controllers through `UIViewControllerRepresenta
 Examples:
 
 - `Diff updates`: add, shuffle, and update rows
-- `Entity to ViewModel`: maps domain entities into component view models and shows available modifiers/layouts
+- `Entity to Content`: maps domain entities into component `Content` and shows available modifiers/layouts
 - `Infinite Scroll`: appends the next page when the list reaches the end
 - `Prefetch`: prefetches images through collection view prefetching and stores them in cache
 - `Header & Footer`: demonstrates real supplementary header/footer views, section spacing, and grid usage
 - `Header & Footer DSL`: demonstrates `Section { rows } header: { ... } footer: { ... }` and inset modifier differences
 - `Component Height`: compares `.automatic` self-sizing rows with component-defined `.absolute` row heights
 - `SwiftUI CarbonList`: demonstrates the `CarbonList { Section { Row } }` DSL directly in a SwiftUI screen
-- `한글 종합 예제`: shows diffing, ViewModel mapping, events, layouts, and infinite scrolling in one screen
+- `한글 종합 예제`: shows diffing, Content mapping, events, layouts, and infinite scrolling in one screen
 
 Build:
 

@@ -72,7 +72,7 @@ final class FeedViewController: UIViewController {
         for post in posts {
           Row(
             id: post.id,
-            component: PostComponent(viewModel: .init(post: post))
+            component: PostComponent(content: .init(post: post))
           )
           .onSelect { [weak self] _ in
             self?.toggleRead(postID: post.id)
@@ -97,7 +97,7 @@ Component는 UIKit view를 만들고 업데이트하는 작은 렌더링 단위�
 
 ```swift
 struct PostComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let readStateTitle: String
@@ -111,7 +111,7 @@ struct PostComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> PostRowView {
     PostRowView()
@@ -119,10 +119,10 @@ struct PostComponent: ListComponent {
 
   func updateView(_ view: PostRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      readStateTitle: viewModel.readStateTitle,
-      readStateColor: viewModel.readStateColor
+      title: content.title,
+      subtitle: content.subtitle,
+      readStateTitle: content.readStateTitle,
+      readStateColor: content.readStateColor
     )
   }
 }
@@ -145,7 +145,7 @@ struct FeedScreen: View {
         for post in posts {
           Row(
             id: post.id,
-            component: PostComponent(viewModel: .init(post: post))
+            component: PostComponent(content: .init(post: post))
           )
         }
       }
@@ -162,14 +162,14 @@ struct FeedScreen: View {
 
 ```swift
 struct SampleComponent: SwiftUIComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeSwiftUIView() -> some View {
-    Text(viewModel.title)
+    Text(content.title)
       .font(.headline)
   }
 
@@ -178,12 +178,12 @@ struct SampleComponent: SwiftUIComponent {
   }
 
   func updateView(_ view: SampleUIKitView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 ```
 
-이제 SwiftUI 화면에서는 `SampleComponent(viewModel: ...)`를 바로 `View`처럼 쓸 수 있고, CarbonListKit의 UIKit 리스트 안에서도 같은 컴포넌트를 재사용할 수 있습니다.
+이제 SwiftUI 화면에서는 `SampleComponent(content: ...)`를 바로 `View`처럼 쓸 수 있고, CarbonListKit의 UIKit 리스트 안에서도 같은 컴포넌트를 재사용할 수 있습니다.
 
 ## 핵심 모델
 
@@ -285,8 +285,8 @@ private lazy var adapter = ListAdapter(
 ```swift
 adapter.apply(updateStrategy: .animated) {
   Section(id: "main") {
-    Row(id: "title", component: TitleComponent(viewModel: title))
-    Row(id: "summary", component: SummaryComponent(viewModel: summary))
+    Row(id: "title", component: TitleComponent(content: title))
+    Row(id: "summary", component: SummaryComponent(content: summary))
   }
 }
 ```
@@ -296,7 +296,7 @@ adapter.apply(updateStrategy: .animated) {
 ```swift
 let list = List {
   Section(id: "main") {
-    Row(id: "row", component: RowComponent(viewModel: model))
+    Row(id: "row", component: RowComponent(content: model))
   }
 }
 
@@ -312,7 +312,7 @@ adapter.apply(list, updateStrategy: .nonAnimated) {
 ```swift
 Section(id: "feed") {
   for item in items {
-    Row(id: item.id, component: FeedComponent(viewModel: .init(item: item)))
+    Row(id: item.id, component: FeedComponent(content: .init(item: item)))
   }
 }
 .layout(.vertical(spacing: 12))
@@ -323,8 +323,8 @@ Section(id: "feed") {
 
 ```swift
 Section(id: "actions") {
-  Cell(id: "add", component: ActionComponent(viewModel: add))
-  Cell(id: "shuffle", component: ActionComponent(viewModel: shuffle))
+  Cell(id: "add", component: ActionComponent(content: add))
+  Cell(id: "shuffle", component: ActionComponent(content: shuffle))
 }
 .layout(.grid(columns: 2, itemSpacing: 10, lineSpacing: 10))
 .contentInsets(.init(top: 0, leading: 16, bottom: 16, trailing: 16))
@@ -337,7 +337,7 @@ orthogonal section:
 ```swift
 Section(id: "carousel") {
   for item in items {
-    Row(id: item.id, component: CardComponent(viewModel: .init(item: item)))
+    Row(id: item.id, component: CardComponent(content: .init(item: item)))
   }
 }
 .layout(.orthogonal(itemSpacing: 12, lineSpacing: 12, scrollingBehavior: .continuous, reservedHeight: 180))
@@ -350,7 +350,7 @@ custom compositional layout:
 
 ```swift
 Section(id: "custom") {
-  Row(id: "note", component: NoteComponent(viewModel: note))
+  Row(id: "note", component: NoteComponent(content: note))
 }
 .layout(.custom { context in
   let itemSize = NSCollectionLayoutSize(
@@ -371,17 +371,17 @@ Section(id: "custom") {
 
 ```swift
 Section(id: "profile") {
-  Row(id: "name", component: ProfileRowComponent(viewModel: name))
-  Row(id: "email", component: ProfileRowComponent(viewModel: email))
+  Row(id: "name", component: ProfileRowComponent(content: name))
+  Row(id: "email", component: ProfileRowComponent(content: email))
 } header: {
   Header(
     id: "profile-header",
-    component: TitleComponent(viewModel: .init(title: "프로필"))
+    component: TitleComponent(content: .init(title: "프로필"))
   )
 } footer: {
   Footer(
     id: "profile-footer",
-    component: CaptionComponent(viewModel: .init(text: "계정 정보는 언제든 변경할 수 있습니다."))
+    component: CaptionComponent(content: .init(text: "계정 정보는 언제든 변경할 수 있습니다."))
   )
 }
 .layout(.vertical(spacing: 10))
@@ -392,10 +392,10 @@ Section(id: "profile") {
 ```swift
 Section(
   id: "profile",
-  header: Header(id: "profile-header", component: TitleComponent(viewModel: title)),
-  footer: Footer(id: "profile-footer", component: CaptionComponent(viewModel: caption))
+  header: Header(id: "profile-header", component: TitleComponent(content: title)),
+  footer: Footer(id: "profile-footer", component: CaptionComponent(content: caption))
 ) {
-  Row(id: "name", component: ProfileRowComponent(viewModel: name))
+  Row(id: "name", component: ProfileRowComponent(content: name))
 }
 ```
 
@@ -404,7 +404,7 @@ Section(
 ```swift
 Footer(
   id: "loading-footer",
-  component: LoadingComponent(viewModel: .init(title: "더 불러오는 중")),
+  component: LoadingComponent(content: .init(title: "더 불러오는 중")),
   layoutSize: .estimated(height: 72)
 )
 ```
@@ -423,12 +423,12 @@ row만 들여쓰기:
 
 ```swift
 Section {
-  Row(id: "content-1", component: RowComponent(viewModel: first))
-  Row(id: "content-2", component: RowComponent(viewModel: second))
+  Row(id: "content-1", component: RowComponent(content: first))
+  Row(id: "content-2", component: RowComponent(content: second))
 } header: {
-  Header(id: "header", component: HeaderComponent(viewModel: header))
+  Header(id: "header", component: HeaderComponent(content: header))
 } footer: {
-  Footer(id: "footer", component: FooterComponent(viewModel: footer))
+  Footer(id: "footer", component: FooterComponent(content: footer))
 }
 .contentInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
 ```
@@ -437,9 +437,9 @@ Section {
 
 ```swift
 Section {
-  Row(id: "content", component: RowComponent(viewModel: content))
+  Row(id: "content", component: RowComponent(content: content))
 } header: {
-  Header(id: "header", component: HeaderComponent(viewModel: header))
+  Header(id: "header", component: HeaderComponent(content: header))
 }
 .sectionInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
 ```
@@ -448,12 +448,12 @@ Section {
 
 ```swift
 Section {
-  Row(id: "first", component: RowComponent(viewModel: first))
+  Row(id: "first", component: RowComponent(content: first))
 }
 .sectionSpacing(24)
 
 Section {
-  Row(id: "second", component: RowComponent(viewModel: second))
+  Row(id: "second", component: RowComponent(content: second))
 }
 ```
 
@@ -462,7 +462,7 @@ Section {
 ### 6. Row 이벤트 받기
 
 ```swift
-Row(id: post.id, component: PostComponent(viewModel: .init(post: post)))
+Row(id: post.id, component: PostComponent(content: .init(post: post)))
   .onSelect { context in
     print(context.rowID, context.indexPath)
   }
@@ -477,7 +477,7 @@ Row(id: post.id, component: PostComponent(viewModel: .init(post: post)))
 `Cell` alias를 사용할 때는 호환 naming도 쓸 수 있습니다.
 
 ```swift
-Cell(id: "cell", component: CellComponent(viewModel: model))
+Cell(id: "cell", component: CellComponent(content: model))
   .didSelect { context in
     print(context.indexPath)
   }
@@ -506,7 +506,7 @@ adapter.apply(
   List {
     Section(id: "feed") {
       for item in items {
-        Row(id: item.id, component: FeedItemComponent(viewModel: .init(item: item)))
+        Row(id: item.id, component: FeedItemComponent(content: .init(item: item)))
       }
     }
     .layout(.vertical(spacing: 10))
@@ -562,9 +562,9 @@ Diff 기준:
 | --- | --- |
 | Section identity | `Section.id` |
 | Row identity | `Row.id` |
-| Row content equality | component type + component view model equality |
+| Row content equality | component type + component content equality |
 
-같은 row identity를 유지한 채 component `ViewModel`만 바꾸면 “내용 업데이트”로 처리됩니다.
+같은 row identity를 유지한 채 component `Content`만 바꾸면 “내용 업데이트”로 처리됩니다.
 
 ```swift
 posts = posts.map { post in
@@ -576,7 +576,7 @@ render()
 
 ## Component 작성 가이드
 
-앱/domain entity와 component `ViewModel`은 분리하는 것을 권장합니다.
+앱/domain entity와 component `Content`은 분리하는 것을 권장합니다.
 
 ```swift
 struct Article: Identifiable, Equatable {
@@ -590,7 +590,7 @@ struct Article: Identifiable, Equatable {
 
 ```swift
 struct ArticleRowComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let metadata: String
     let readStateTitle: String
@@ -604,7 +604,7 @@ struct ArticleRowComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ArticleRowView {
     ArticleRowView()
@@ -612,10 +612,10 @@ struct ArticleRowComponent: ListComponent {
 
   func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      metadata: viewModel.metadata,
-      readStateTitle: viewModel.readStateTitle,
-      readStateColor: viewModel.readStateColor
+      title: content.title,
+      metadata: content.metadata,
+      readStateTitle: content.readStateTitle,
+      readStateColor: content.readStateColor
     )
   }
 }
@@ -640,11 +640,11 @@ row 높이를 직접 알고 있다면 component에서 `height`를 구현합니�
 
 ```swift
 struct FixedArticleComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   var height: ListComponentHeight {
     .absolute(72)
@@ -655,7 +655,7 @@ struct FixedArticleComponent: ListComponent {
   }
 
   func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title)
+    view.configure(title: content.title)
   }
 }
 ```
@@ -666,7 +666,7 @@ component가 상태 객체를 가져야 한다면 coordinator를 사용합니다
 
 ```swift
 struct TimerComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
   }
 
@@ -674,7 +674,7 @@ struct TimerComponent: ListComponent {
     var renderCount = 0
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeCoordinator() -> Coordinator {
     Coordinator()
@@ -686,7 +686,7 @@ struct TimerComponent: ListComponent {
 
   func updateView(_ view: TimerView, context: ListComponentContext<Coordinator>) {
     context.coordinator.renderCount += 1
-    view.configure(title: viewModel.title, renderCount: context.coordinator.renderCount)
+    view.configure(title: content.title, renderCount: context.coordinator.renderCount)
   }
 }
 ```
@@ -695,14 +695,14 @@ prefetch가 필요한 컴포넌트는 `ComponentRemoteImagePrefetchable` 프로�
 
 ```swift
 struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let imageURL: URL
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   var remoteImageURLs: [URL] {
-    [viewModel.imageURL]
+    [content.imageURL]
   }
 
   func makeView(context: ListComponentContext<Void>) -> ImageView {
@@ -710,7 +710,7 @@ struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
   }
 
   func updateView(_ view: ImageView, context: ListComponentContext<Void>) {
-    view.loadImage(from: viewModel.imageURL)
+    view.loadImage(from: content.imageURL)
   }
 }
 ```
@@ -730,14 +730,14 @@ Example/
 | 예제 | 설명 |
 | --- | --- |
 | `Diff updates` | row 추가, 셔플, 내용 업데이트와 animated diff를 보여줍니다. |
-| `Entity to ViewModel` | domain entity와 component ViewModel 분리, 업데이트 전략, layout modifier를 보여줍니다. |
+| `Entity to Content` | domain entity와 component Content 분리, 업데이트 전략, layout modifier를 보여줍니다. |
 | `Infinite Scroll` | `onReachEnd`로 다음 페이지를 append합니다. |
 | `Prefetch` | collection view가 아이템을 prefetch할 때 이미지를 미리 로드하고 캐시에 저장합니다. prefetch된 이미지는 즉시 표시되어 부드러운 스크롤을 제공합니다. |
 | `Header & Footer` | 실제 supplementary header/footer, section spacing, grid와 함께 쓰는 예제를 보여줍니다. |
 | `Header & Footer DSL` | `Section { rows } header: { ... } footer: { ... }` 문법과 inset modifier 차이를 보여줍니다. |
 | `Component Height` | `.automatic` self-sizing row와 component가 직접 지정한 `.absolute` row 높이를 비교합니다. |
 | `SwiftUI CarbonList` | SwiftUI 화면에서 `CarbonList { Section { Row } }` DSL을 직접 쓰는 예제를 보여줍니다. |
-| `한글 종합 예제` | diff, ViewModel, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
+| `한글 종합 예제` | diff, Content, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
 
 빌드:
 

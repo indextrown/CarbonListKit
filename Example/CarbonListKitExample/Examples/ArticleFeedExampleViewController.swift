@@ -54,7 +54,7 @@ final class ArticleFeedExampleViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    title = "Entity to ViewModel"
+    title = "Entity to Content"
     view.backgroundColor = .systemBackground
     setupCollectionView()
     render()
@@ -80,9 +80,9 @@ final class ArticleFeedExampleViewController: UIViewController {
         Row(
           id: "explanation",
           component: ArticleNoteComponent(
-            viewModel: .init(
+            content: .init(
               title: "Domain entity stays outside the component",
-              message: "`Article` is app data. `ArticleRowComponent.ViewModel` is only the render-ready shape for a UIKit row."
+              message: "`Article` is app data. `ArticleRowComponent.Content` is only the render-ready shape for a UIKit row."
             )
           )
         )
@@ -101,7 +101,7 @@ final class ArticleFeedExampleViewController: UIViewController {
           Row(
             id: strategy.rawValue,
             component: ArticleActionComponent(
-              viewModel: .init(
+              content: .init(
                 title: strategy.title,
                 subtitle: strategy.subtitle,
                 isSelected: selectedUpdateStrategy == strategy
@@ -120,28 +120,28 @@ final class ArticleFeedExampleViewController: UIViewController {
         Cell(
           id: "row",
           component: ArticlePillComponent(
-            viewModel: .init(title: "Row", subtitle: "Cell alias")
+            content: .init(title: "Row", subtitle: "Cell alias")
           )
         )
 
         Cell(
           id: "section",
           component: ArticlePillComponent(
-            viewModel: .init(title: "Section", subtitle: "contentInsets")
+            content: .init(title: "Section", subtitle: "contentInsets")
           )
         )
 
         Cell(
           id: "grid",
           component: ArticlePillComponent(
-            viewModel: .init(title: "Grid", subtitle: "2 columns")
+            content: .init(title: "Grid", subtitle: "2 columns")
           )
         )
 
         Cell(
           id: "custom",
           component: ArticlePillComponent(
-            viewModel: .init(title: "Custom", subtitle: "layout")
+            content: .init(title: "Custom", subtitle: "layout")
           )
         )
       }
@@ -152,7 +152,7 @@ final class ArticleFeedExampleViewController: UIViewController {
         Row(
           id: "custom-layout-note",
           component: ArticleNoteComponent(
-            viewModel: .init(
+            content: .init(
               title: "Custom layout escape hatch",
               message: "This section uses `.layout(.custom { ... })` and returns a native `NSCollectionLayoutSection`."
             )
@@ -168,7 +168,7 @@ final class ArticleFeedExampleViewController: UIViewController {
         for article in articles {
           Row(
             id: article.id,
-            component: ArticleRowComponent(viewModel: ArticleRowComponent.ViewModel(article: article))
+            component: ArticleRowComponent(content: ArticleRowComponent.Content(article: article))
           )
           .onSelect { [weak self] _ in
             self?.toggleRead(articleID: article.id)
@@ -264,19 +264,19 @@ private struct Article: Identifiable, Equatable {
 }
 
 private struct ArticleNoteComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let message: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ArticleNoteView {
     ArticleNoteView()
   }
 
   func updateView(_ view: ArticleNoteView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, message: viewModel.message)
+    view.configure(title: content.title, message: content.message)
   }
 }
 
@@ -340,13 +340,13 @@ private final class ArticleNoteView: UIView {
 }
 
 private struct ArticleActionComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let isSelected: Bool
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ArticleActionView {
     ArticleActionView()
@@ -354,9 +354,9 @@ private struct ArticleActionComponent: ListComponent {
 
   func updateView(_ view: ArticleActionView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      isSelected: viewModel.isSelected
+      title: content.title,
+      subtitle: content.subtitle,
+      isSelected: content.isSelected
     )
   }
 }
@@ -434,19 +434,19 @@ private final class ArticleActionView: UIView {
 }
 
 private struct ArticlePillComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ArticlePillView {
     ArticlePillView()
   }
 
   func updateView(_ view: ArticlePillView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 
@@ -512,7 +512,7 @@ private final class ArticlePillView: UIView {
 }
 
 private struct ArticleRowComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let metadata: String
     let readStateTitle: String
@@ -526,7 +526,7 @@ private struct ArticleRowComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ArticleRowView {
     ArticleRowView()
@@ -534,10 +534,10 @@ private struct ArticleRowComponent: ListComponent {
 
   func updateView(_ view: ArticleRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      metadata: viewModel.metadata,
-      readStateTitle: viewModel.readStateTitle,
-      readStateColor: viewModel.readStateColor
+      title: content.title,
+      metadata: content.metadata,
+      readStateTitle: content.readStateTitle,
+      readStateColor: content.readStateColor
     )
   }
 }

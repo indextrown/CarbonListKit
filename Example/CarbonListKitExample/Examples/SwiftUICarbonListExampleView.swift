@@ -8,7 +8,7 @@ struct SwiftUICarbonListExampleView: View {
   var body: some View {
     VStack(spacing: 0) {
       SwiftUIExampleBridgeComponent(
-        viewModel: .init(
+        content: .init(
           title: "SwiftUIComponent bridge",
           subtitle: "A single component can render as SwiftUI View and still back a UIKit list cell."
         )
@@ -20,7 +20,7 @@ struct SwiftUICarbonListExampleView: View {
           Row(
             id: "summary",
             component: SwiftUIExampleSummaryComponent(
-              viewModel: .init(
+              content: .init(
                 title: "SwiftUI + CarbonList",
                 subtitle: "SwiftUI state changes rebuild the List DSL. The UIKit adapter still handles diffing, layout, and rendering."
               )
@@ -30,7 +30,7 @@ struct SwiftUICarbonListExampleView: View {
           Footer(
             id: "summary-footer",
             component: SwiftUIExampleFooterComponent(
-              viewModel: .init(text: "Tap a row to favorite it. Use the buttons above to mutate SwiftUI state.")
+              content: .init(text: "Tap a row to favorite it. Use the buttons above to mutate SwiftUI state.")
             )
           )
         }
@@ -42,7 +42,7 @@ struct SwiftUICarbonListExampleView: View {
           for item in items {
             Row(
               id: item.id,
-              component: SwiftUIExampleItemComponent(viewModel: .init(item: item))
+              component: SwiftUIExampleItemComponent(content: .init(item: item))
             )
             .onSelect { _ in
               toggleFavorite(itemID: item.id)
@@ -52,7 +52,7 @@ struct SwiftUICarbonListExampleView: View {
           Header(
             id: "items-header",
             component: SwiftUIExampleHeaderComponent(
-              viewModel: .init(title: "SwiftUI state", subtitle: "\(items.count) rows")
+              content: .init(title: "SwiftUI state", subtitle: "\(items.count) rows")
             )
           )
         }
@@ -129,18 +129,18 @@ struct SwiftUICarbonListExampleView: View {
 }
 
 private struct SwiftUIExampleBridgeComponent: SwiftUIComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeSwiftUIView() -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text(viewModel.title)
+      Text(content.title)
         .font(.headline)
-      Text(viewModel.subtitle)
+      Text(content.subtitle)
         .font(.subheadline)
         .foregroundStyle(.secondary)
     }
@@ -159,7 +159,7 @@ private struct SwiftUIExampleBridgeComponent: SwiftUIComponent {
   }
 
   func updateView(_ view: SwiftUIExampleSummaryView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 
@@ -196,24 +196,24 @@ private struct SwiftUIExampleItem: Identifiable, Equatable {
 }
 
 private struct SwiftUIExampleSummaryComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> SwiftUIExampleSummaryView {
     SwiftUIExampleSummaryView()
   }
 
   func updateView(_ view: SwiftUIExampleSummaryView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 
 private struct SwiftUIExampleItemComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let tintColor: UIColor
@@ -227,7 +227,7 @@ private struct SwiftUIExampleItemComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> SwiftUIExampleItemView {
     SwiftUIExampleItemView()
@@ -235,44 +235,44 @@ private struct SwiftUIExampleItemComponent: ListComponent {
 
   func updateView(_ view: SwiftUIExampleItemView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      tintColor: viewModel.tintColor,
-      isFavorite: viewModel.isFavorite
+      title: content.title,
+      subtitle: content.subtitle,
+      tintColor: content.tintColor,
+      isFavorite: content.isFavorite
     )
   }
 }
 
 private struct SwiftUIExampleHeaderComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> SwiftUIExampleHeaderView {
     SwiftUIExampleHeaderView()
   }
 
   func updateView(_ view: SwiftUIExampleHeaderView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 
 private struct SwiftUIExampleFooterComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let text: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> SwiftUIExampleFooterView {
     SwiftUIExampleFooterView()
   }
 
   func updateView(_ view: SwiftUIExampleFooterView, context: ListComponentContext<Void>) {
-    view.configure(text: viewModel.text)
+    view.configure(text: content.text)
   }
 }
 

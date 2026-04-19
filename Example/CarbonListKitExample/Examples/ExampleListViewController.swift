@@ -39,7 +39,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "diff-updates",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Diff updates",
               subtitle: "Add, shuffle, and update rows with animated DifferenceKit changes.",
               badge: "Basic",
@@ -54,9 +54,9 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "entity-view-model",
           component: ExampleMenuComponent(
-            viewModel: .init(
-              title: "Entity to ViewModel",
-              subtitle: "Keep domain entities separate from component view models.",
+            content: .init(
+              title: "Entity to Content",
+              subtitle: "Keep domain entities separate from component Content.",
               badge: "Mapping",
               tintColor: .systemGreen
             )
@@ -69,7 +69,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "infinite-scroll",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Infinite Scroll",
               subtitle: "Append the next page when the list reaches the end.",
               badge: "Paging",
@@ -84,7 +84,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "prefetch",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Prefetch",
               subtitle: "Prefetch images before they appear on screen.",
               badge: "Performance",
@@ -99,7 +99,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "header-footer",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Header & Footer",
               subtitle: "Render section supplementary views with the same component model.",
               badge: "Layout",
@@ -114,7 +114,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "header-footer-dsl",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Header & Footer DSL",
               subtitle: "Write rows first, then attach header and footer trailing closures.",
               badge: "DSL",
@@ -129,7 +129,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "component-height",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Component Height",
               subtitle: "Compare automatic self-sizing rows with component-defined heights.",
               badge: "Height",
@@ -144,7 +144,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "swiftui-carbon-list",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "SwiftUI CarbonList",
               subtitle: "Use the same List DSL directly from a SwiftUI screen.",
               badge: "SwiftUI",
@@ -160,9 +160,9 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "korean-complete",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "한글 종합 예제",
-              subtitle: "한 화면에서 diff, ViewModel, 이벤트, 레이아웃, 무한 스크롤을 모두 확인합니다.",
+              subtitle: "한 화면에서 diff, Content, 이벤트, 레이아웃, 무한 스크롤을 모두 확인합니다.",
               badge: "Korean",
               tintColor: .systemPink
             )
@@ -175,7 +175,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "orthogonal-section",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "Orthogonal Section",
               subtitle: "Scroll cards horizontally inside a vertical feed.",
               badge: "Carousel",
@@ -190,7 +190,7 @@ final class ExampleListViewController: UIViewController {
         Row(
           id: "practice",
           component: ExampleMenuComponent(
-            viewModel: .init(
+            content: .init(
               title: "컴포넌트 예제",
               subtitle: "컴포넌트 구현 예제입니다.",
               badge: "Component",
@@ -213,14 +213,14 @@ final class ExampleListViewController: UIViewController {
 }
 
 private struct ExampleMenuComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let badge: String
     let tintColor: UIColor
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> ExampleMenuView {
     ExampleMenuView()
@@ -228,10 +228,10 @@ private struct ExampleMenuComponent: ListComponent {
 
   func updateView(_ view: ExampleMenuView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      badge: viewModel.badge,
-      tintColor: viewModel.tintColor
+      title: content.title,
+      subtitle: content.subtitle,
+      badge: content.badge,
+      tintColor: content.tintColor
     )
   }
 }

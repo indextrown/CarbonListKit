@@ -25,15 +25,15 @@ public enum ListComponentHeight: Equatable {
 /// 리스트에서 사용할 수 있는 컴포넌트를 정의하는 프로토콜입니다.
 /// 뷰 모델, 뷰, 코디네이터를 포함하여 재사용 가능한 UI 컴포넌트를 만듭니다.
 public protocol ListComponent {
-  /// 뷰 모델 타입 (Equatable이어야 함)
-  associatedtype ViewModel: Equatable
+  /// 컴포넌트에 주입할 콘텐츠 타입 (Equatable이어야 함)
+  associatedtype Content: Equatable
   /// 뷰 타입 (UIView의 서브클래스)
   associatedtype View: UIView
   /// 코디네이터 타입 (기본값: Void)
   associatedtype Coordinator = Void
 
-  /// 뷰 모델
-  var viewModel: ViewModel { get }
+  /// 컴포넌트 콘텐츠
+  var content: Content { get }
   /// 컴포넌트 높이
   var height: ListComponentHeight { get }
   /// 재사용 식별자

@@ -64,7 +64,7 @@ final class KoreanCompleteExampleViewController: UIViewController {
       case .shuffle:
         return "같은 id를 유지한 채 Row 이동 애니메이션을 확인합니다."
       case .update:
-        return "id는 그대로 두고 ViewModel 내용만 바꿉니다."
+        return "id는 그대로 두고 Content 내용만 바꿉니다."
       }
     }
 
@@ -123,9 +123,9 @@ final class KoreanCompleteExampleViewController: UIViewController {
           Row(
             id: "intro-card",
             component: KoreanInfoComponent(
-              viewModel: .init(
+              content: .init(
                 title: "CarbonListKit 한글 종합 예제",
-                message: "Section, Row, Cell 별칭, ViewModel 매핑, 이벤트, 업데이트 전략, 세로/그리드/커스텀 레이아웃, 무한 스크롤을 한 화면에서 확인합니다."
+                message: "Section, Row, Cell 별칭, Content 매핑, 이벤트, 업데이트 전략, 세로/그리드/커스텀 레이아웃, 무한 스크롤을 한 화면에서 확인합니다."
               )
             )
           )
@@ -144,7 +144,7 @@ final class KoreanCompleteExampleViewController: UIViewController {
             Row(
               id: strategy.rawValue,
               component: KoreanChoiceComponent(
-                viewModel: .init(
+                content: .init(
                   title: strategy.title,
                   subtitle: strategy.subtitle,
                   isSelected: selectedUpdateStrategy == strategy
@@ -164,7 +164,7 @@ final class KoreanCompleteExampleViewController: UIViewController {
             Row(
               id: action.rawValue,
               component: KoreanActionComponent(
-                viewModel: .init(
+                content: .init(
                   title: action.title,
                   subtitle: action.subtitle,
                   tintColor: action.tintColor
@@ -183,28 +183,28 @@ final class KoreanCompleteExampleViewController: UIViewController {
           Cell(
             id: "cell-alias",
             component: KoreanBadgeComponent(
-              viewModel: .init(title: "Cell", subtitle: "Row 별칭")
+              content: .init(title: "Cell", subtitle: "Row 별칭")
             )
           )
 
           Cell(
             id: "section-insets",
             component: KoreanBadgeComponent(
-              viewModel: .init(title: "Insets", subtitle: "섹션 여백")
+              content: .init(title: "Insets", subtitle: "섹션 여백")
             )
           )
 
           Cell(
             id: "grid-layout",
             component: KoreanBadgeComponent(
-              viewModel: .init(title: "Grid", subtitle: "2열 배치")
+              content: .init(title: "Grid", subtitle: "2열 배치")
             )
           )
 
           Cell(
             id: "events",
             component: KoreanBadgeComponent(
-              viewModel: .init(title: "Events", subtitle: "선택/표시")
+              content: .init(title: "Events", subtitle: "선택/표시")
             )
           )
         }
@@ -215,7 +215,7 @@ final class KoreanCompleteExampleViewController: UIViewController {
           Row(
             id: "custom-note",
             component: KoreanInfoComponent(
-              viewModel: .init(
+              content: .init(
                 title: "커스텀 레이아웃",
                 message: "이 섹션은 `.layout(.custom { ... })`로 직접 만든 NSCollectionLayoutSection을 사용합니다."
               )
@@ -231,7 +231,7 @@ final class KoreanCompleteExampleViewController: UIViewController {
           for post in posts {
             Row(
               id: post.id,
-              component: KoreanPostComponent(viewModel: .init(post: post))
+              component: KoreanPostComponent(content: .init(post: post))
             )
             .onSelect { [weak self] context in
               self?.toggleBookmark(postID: post.id, indexPath: context.indexPath)
@@ -251,7 +251,7 @@ final class KoreanCompleteExampleViewController: UIViewController {
           Row(
             id: "footer",
             component: KoreanFooterComponent(
-              viewModel: .init(
+              content: .init(
                 title: isLoadingNextPage ? "다음 동네 소식을 불러오는 중..." : "아래로 더 내려보세요",
                 subtitle: "현재 \(posts.count)개"
               )
@@ -447,19 +447,19 @@ private struct KoreanPost: Identifiable, Equatable {
 }
 
 private struct KoreanInfoComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let message: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> KoreanInfoView {
     KoreanInfoView()
   }
 
   func updateView(_ view: KoreanInfoView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, message: viewModel.message)
+    view.configure(title: content.title, message: content.message)
   }
 }
 
@@ -523,13 +523,13 @@ private final class KoreanInfoView: UIView {
 }
 
 private struct KoreanChoiceComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let isSelected: Bool
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> KoreanChoiceView {
     KoreanChoiceView()
@@ -537,9 +537,9 @@ private struct KoreanChoiceComponent: ListComponent {
 
   func updateView(_ view: KoreanChoiceView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      isSelected: viewModel.isSelected
+      title: content.title,
+      subtitle: content.subtitle,
+      isSelected: content.isSelected
     )
   }
 }
@@ -617,13 +617,13 @@ private final class KoreanChoiceView: UIView {
 }
 
 private struct KoreanActionComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let tintColor: UIColor
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> KoreanActionView {
     KoreanActionView()
@@ -631,9 +631,9 @@ private struct KoreanActionComponent: ListComponent {
 
   func updateView(_ view: KoreanActionView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      tintColor: viewModel.tintColor
+      title: content.title,
+      subtitle: content.subtitle,
+      tintColor: content.tintColor
     )
   }
 }
@@ -709,19 +709,19 @@ private final class KoreanActionView: UIView {
 }
 
 private struct KoreanBadgeComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> KoreanBadgeView {
     KoreanBadgeView()
   }
 
   func updateView(_ view: KoreanBadgeView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 
@@ -787,7 +787,7 @@ private final class KoreanBadgeView: UIView {
 }
 
 private struct KoreanPostComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let metadata: String
     let body: String
@@ -803,7 +803,7 @@ private struct KoreanPostComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> KoreanPostView {
     KoreanPostView()
@@ -811,11 +811,11 @@ private struct KoreanPostComponent: ListComponent {
 
   func updateView(_ view: KoreanPostView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      metadata: viewModel.metadata,
-      body: viewModel.body,
-      bookmarkTitle: viewModel.bookmarkTitle,
-      bookmarkColor: viewModel.bookmarkColor
+      title: content.title,
+      metadata: content.metadata,
+      body: content.body,
+      bookmarkTitle: content.bookmarkTitle,
+      bookmarkColor: content.bookmarkColor
     )
   }
 }
@@ -914,19 +914,19 @@ private final class KoreanPostView: UIView {
 }
 
 private struct KoreanFooterComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> KoreanFooterView {
     KoreanFooterView()
   }
 
   func updateView(_ view: KoreanFooterView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 

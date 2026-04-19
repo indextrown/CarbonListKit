@@ -48,7 +48,7 @@ final class StudyVC: UIViewController {
         Row(
           id: "section-title-1",
           component: SimpleTextComponent(
-            viewModel: .init(
+            content: .init(
               title: "CarbonListKit 시작하기",
               subtitle: "간단한 텍스트는 이렇게 바로 표현할 수 있어요."
             )
@@ -58,7 +58,7 @@ final class StudyVC: UIViewController {
         for post in posts {
           Row(
             id: post.id,
-            component: PostComponent(viewModel: .init(post: post))
+            component: PostComponent(content: .init(post: post))
           )
         }
       }
@@ -70,7 +70,7 @@ final class StudyVC: UIViewController {
         Row(
           id: "section-title-2",
           component: SimpleTextComponent(
-            viewModel: .init(
+            content: .init(
               title: "심플 버전",
               subtitle: "Model / 전용 View 없이 Component 하나에서 바로 렌더링"
             )
@@ -80,7 +80,7 @@ final class StudyVC: UIViewController {
         Row(
           id: "simple-1",
           component: SimpleTextComponent(
-            viewModel: .init(
+            content: .init(
               title: "CarbonListKit 시작하기",
               subtitle: "간단한 텍스트는 이렇게 바로 표현할 수 있어요."
             )
@@ -90,7 +90,7 @@ final class StudyVC: UIViewController {
         Row(
           id: "simple-2",
           component: SimpleTextComponent(
-            viewModel: .init(
+            content: .init(
               title: "Component 하나만으로도 가능",
               subtitle: "샘플, 프로토타입, 고정 UI에 적합합니다."
             )
@@ -100,7 +100,7 @@ final class StudyVC: UIViewController {
         Row(
           id: "simple-3",
           component: SimpleTextComponent(
-            viewModel: .init(
+            content: .init(
               title: "하지만 실전은 분리 추천",
               subtitle: "도메인 모델과 UI 책임을 나누면 유지보수가 쉬워집니다."
             )
@@ -155,7 +155,7 @@ extension Post {
 }
 
 struct PostComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let readStateTitle: String
@@ -169,7 +169,7 @@ struct PostComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> PostRowView {
     PostRowView()
@@ -177,10 +177,10 @@ struct PostComponent: ListComponent {
 
   func updateView(_ view: PostRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      readStateTitle: viewModel.readStateTitle,
-      readStateColor: viewModel.readStateColor
+      title: content.title,
+      subtitle: content.subtitle,
+      readStateTitle: content.readStateTitle,
+      readStateColor: content.readStateColor
     )
   }
 }
@@ -248,12 +248,12 @@ final class PostRowView: UIView {
 
 // MARK: - 심플 버전
 struct SimpleTextComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> SimpleTextRowView {
     SimpleTextRowView()
@@ -261,8 +261,8 @@ struct SimpleTextComponent: ListComponent {
 
   func updateView(_ view: SimpleTextRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle
+      title: content.title,
+      subtitle: content.subtitle
     )
   }
 }

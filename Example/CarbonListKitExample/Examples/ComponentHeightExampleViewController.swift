@@ -38,7 +38,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Row(
           id: "automatic-short",
           component: AutomaticHeightComponent(
-            viewModel: .init(
+            content: .init(
               title: "Automatic height",
               body: "height를 구현하지 않으면 Auto Layout으로 필요한 높이를 계산합니다.",
               tintColor: .systemBlue
@@ -49,7 +49,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Row(
           id: "automatic-long",
           component: AutomaticHeightComponent(
-            viewModel: .init(
+            content: .init(
               title: "Automatic height with long text",
               body: "여러 줄 텍스트가 들어오면 estimated 80에서 시작하더라도 systemLayoutSizeFitting 결과에 맞춰 row가 자연스럽게 커집니다. 기존 컴포넌트는 아무 코드도 바꾸지 않아도 이 경로를 그대로 사용합니다.",
               tintColor: .systemGreen
@@ -60,7 +60,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Header(
           id: "automatic-header",
           component: HeightHeaderComponent(
-            viewModel: .init(
+            content: .init(
               title: "Default: .automatic",
               subtitle: "컴포넌트에서 height를 정의하지 않은 상태"
             )
@@ -75,7 +75,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Row(
           id: "fixed-72",
           component: FixedHeightComponent(
-            viewModel: .init(
+            content: .init(
               title: "Fixed 72",
               subtitle: "var height: .absolute(72)",
               height: 72,
@@ -87,7 +87,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Row(
           id: "fixed-120",
           component: FixedHeightComponent(
-            viewModel: .init(
+            content: .init(
               title: "Fixed 120",
               subtitle: "Auto Layout 측정 없이 지정 높이를 바로 사용합니다.",
               height: 120,
@@ -99,7 +99,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Header(
           id: "fixed-header",
           component: HeightHeaderComponent(
-            viewModel: .init(
+            content: .init(
               title: "Explicit: .absolute",
               subtitle: "컴포넌트가 직접 row 높이를 결정하는 상태"
             )
@@ -109,7 +109,7 @@ final class ComponentHeightExampleViewController: UIViewController {
         Footer(
           id: "fixed-footer",
           component: HeightFooterComponent(
-            viewModel: .init(text: "높이를 직접 지정하면 self-sizing 측정을 건너뛰어 예측 가능한 높이와 더 적은 측정 비용을 얻을 수 있습니다.")
+            content: .init(text: "높이를 직접 지정하면 self-sizing 측정을 건너뛰어 예측 가능한 높이와 더 적은 측정 비용을 얻을 수 있습니다.")
           )
         )
       }
@@ -125,19 +125,19 @@ final class ComponentHeightExampleViewController: UIViewController {
 }
 
 private struct HeightHeaderComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> HeightHeaderView {
     HeightHeaderView()
   }
 
   func updateView(_ view: HeightHeaderView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 
@@ -187,13 +187,13 @@ private final class HeightHeaderView: UIView {
 }
 
 private struct AutomaticHeightComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let body: String
     let tintColor: UIColor
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> HeightCardView {
     HeightCardView()
@@ -201,26 +201,26 @@ private struct AutomaticHeightComponent: ListComponent {
 
   func updateView(_ view: HeightCardView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.body,
+      title: content.title,
+      subtitle: content.body,
       badge: ".automatic",
-      tintColor: viewModel.tintColor
+      tintColor: content.tintColor
     )
   }
 }
 
 private struct FixedHeightComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let height: CGFloat
     let tintColor: UIColor
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   var height: ListComponentHeight {
-    .absolute(viewModel.height)
+    .absolute(content.height)
   }
 
   func makeView(context: ListComponentContext<Void>) -> HeightCardView {
@@ -229,10 +229,10 @@ private struct FixedHeightComponent: ListComponent {
 
   func updateView(_ view: HeightCardView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      badge: ".absolute(\(Int(viewModel.height)))",
-      tintColor: viewModel.tintColor
+      title: content.title,
+      subtitle: content.subtitle,
+      badge: ".absolute(\(Int(content.height)))",
+      tintColor: content.tintColor
     )
   }
 }
@@ -299,18 +299,18 @@ private final class HeightCardView: UIView {
 }
 
 private struct HeightFooterComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let text: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> HeightFooterView {
     HeightFooterView()
   }
 
   func updateView(_ view: HeightFooterView, context: ListComponentContext<Void>) {
-    view.configure(text: viewModel.text)
+    view.configure(text: content.text)
   }
 }
 

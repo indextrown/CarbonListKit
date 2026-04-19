@@ -21,8 +21,8 @@ public struct AnyListComponent: Equatable {
     box.height
   }
 
-  var viewModel: AnyEquatableValue {
-    box.viewModel
+  var content: AnyEquatableValue {
+    box.content
   }
 
   /// AnyListComponent를 초기화합니다.
@@ -62,7 +62,7 @@ public struct AnyListComponent: Equatable {
   /// 타입, 뷰 모델, 높이를 비교합니다.
   public static func == (lhs: AnyListComponent, rhs: AnyListComponent) -> Bool {
     lhs.componentTypeID == rhs.componentTypeID
-      && lhs.viewModel == rhs.viewModel
+      && lhs.content == rhs.content
       && lhs.height == rhs.height
   }
 }
@@ -88,7 +88,7 @@ private protocol AnyListComponentBox {
   var componentTypeID: ObjectIdentifier { get }
   var reuseIdentifier: String { get }
   var height: ListComponentHeight { get }
-  var viewModel: AnyEquatableValue { get }
+  var content: AnyEquatableValue { get }
 
   func makeCoordinator() -> Any
   func makeView(coordinator: Any) -> UIView
@@ -114,9 +114,9 @@ private struct ListComponentBox<Component: ListComponent>: AnyListComponentBox {
     component.height
   }
 
-  /// 뷰 모델
-  var viewModel: AnyEquatableValue {
-    AnyEquatableValue(component.viewModel)
+  /// 컴포넌트 콘텐츠
+  var content: AnyEquatableValue {
+    AnyEquatableValue(component.content)
   }
 
   /// ListComponentBox를 초기화합니다.

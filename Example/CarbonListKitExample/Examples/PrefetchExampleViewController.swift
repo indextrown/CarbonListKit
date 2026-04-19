@@ -58,7 +58,7 @@ final class PrefetchExampleViewController: UIViewController {
         for image in images {
           Row(
             id: image.id,
-            component: ImageComponent(viewModel: .init(image: image, prefetcher: imagePrefetcher))
+            component: ImageComponent(content: .init(image: image, prefetcher: imagePrefetcher))
           )
         }
       }
@@ -79,7 +79,7 @@ struct ImageItem: Identifiable, Equatable {
 // MARK: - Components
 
 struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let imageURL: URL
     let title: String
     // prefetcher는 Equatable 비교에서 제외
@@ -91,15 +91,15 @@ struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
       self.prefetcher = prefetcher
     }
 
-    static func == (lhs: ViewModel, rhs: ViewModel) -> Bool {
+    static func == (lhs: Content, rhs: Content) -> Bool {
       lhs.imageURL == rhs.imageURL && lhs.title == rhs.title
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   var remoteImageURLs: [URL] {
-    [viewModel.imageURL]
+    [content.imageURL]
   }
 
   func makeView(context: ListComponentContext<Void>) -> ImageCellView {
@@ -107,7 +107,7 @@ struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
   }
 
   func updateView(_ view: ImageCellView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, imageURL: viewModel.imageURL, prefetcher: viewModel.prefetcher)
+    view.configure(title: content.title, imageURL: content.imageURL, prefetcher: content.prefetcher)
   }
 }
 

@@ -46,7 +46,7 @@ final class OrthogonalSectionExampleViewController: UIViewController {
         Row(
           id: "explanation",
           component: OrthogonalNoteComponent(
-            viewModel: .init(
+            content: .init(
               title: "Orthogonal section scrolling",
               message: "This screen uses `.layout(.orthogonal(...))` so the cards scroll horizontally while the list itself stays vertical."
             )
@@ -60,7 +60,7 @@ final class OrthogonalSectionExampleViewController: UIViewController {
         for card in featuredCards {
           Row(
             id: card.id,
-            component: OrthogonalCardComponent(viewModel: .init(card: card))
+            component: OrthogonalCardComponent(content: .init(card: card))
           )
         }
       }
@@ -71,7 +71,7 @@ final class OrthogonalSectionExampleViewController: UIViewController {
         Row(
           id: "tip",
           component: OrthogonalNoteComponent(
-            viewModel: .init(
+            content: .init(
               title: "Tip",
               message: "Try changing the scrolling behavior to `.paging` or `.groupPagingCentered` if you want a more carousel-like feel."
             )
@@ -97,11 +97,11 @@ private struct OrthogonalCard: Identifiable, Equatable {
 }
 
 private struct OrthogonalCardComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let card: OrthogonalCard
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> OrthogonalCardView {
     OrthogonalCardView()
@@ -109,27 +109,27 @@ private struct OrthogonalCardComponent: ListComponent {
 
   func updateView(_ view: OrthogonalCardView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.card.title,
-      subtitle: viewModel.card.subtitle,
-      tintColor: viewModel.card.tintColor
+      title: content.card.title,
+      subtitle: content.card.subtitle,
+      tintColor: content.card.tintColor
     )
   }
 }
 
 private struct OrthogonalNoteComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let message: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> OrthogonalNoteView {
     OrthogonalNoteView()
   }
 
   func updateView(_ view: OrthogonalNoteView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, message: viewModel.message)
+    view.configure(title: content.title, message: content.message)
   }
 }
 

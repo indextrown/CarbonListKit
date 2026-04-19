@@ -332,7 +332,7 @@ struct EventsAndConfigurationTests {
 struct ComponentHeightTests {
   @Test("ListComponent의 기본 높이는 automatic이다")
   func componentDefaultHeightIsAutomatic() {
-    let component = TestComponent(viewModel: .init(text: "내용"))
+    let component = TestComponent(content: .init(text: "내용"))
 
     #expect(component.height == .automatic)
   }
@@ -341,11 +341,11 @@ struct ComponentHeightTests {
   func rowEqualityIncludesComponentHeight() {
     let base = Row(
       id: "row",
-      component: FixedHeightComponent(viewModel: .init(text: "내용"), height: .absolute(44))
+      component: FixedHeightComponent(content: .init(text: "내용"), height: .absolute(44))
     )
     let differentHeight = Row(
       id: "row",
-      component: FixedHeightComponent(viewModel: .init(text: "내용"), height: .absolute(72))
+      component: FixedHeightComponent(content: .init(text: "내용"), height: .absolute(72))
     )
 
     #expect(base != differentHeight)
@@ -355,7 +355,7 @@ struct ComponentHeightTests {
   @Test("ComponentCell은 absolute height면 Auto Layout 측정 대신 지정 높이를 사용한다")
   func componentCellUsesAbsoluteHeight() {
     let cell = ComponentCell(frame: CGRect(x: 0, y: 0, width: 100, height: 80))
-    let component = FixedHeightComponent(viewModel: .init(text: "내용"), height: .absolute(123))
+    let component = FixedHeightComponent(content: .init(text: "내용"), height: .absolute(123))
     cell.render(component: AnyListComponent(component))
 
     let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: 0, section: 0))
@@ -400,13 +400,13 @@ private func makeSection() -> Section {
 }
 
 private func testRow(id: some Hashable, text: String) -> Row {
-  Row(id: id, component: TestComponent(viewModel: .init(text: text)))
+  Row(id: id, component: TestComponent(content: .init(text: text)))
 }
 
 private func testHeader(id: some Hashable, text: String, height: CGFloat = 44) -> Header {
   Header(
     id: id,
-    component: TestComponent(viewModel: .init(text: text)),
+    component: TestComponent(content: .init(text: text)),
     layoutSize: .estimated(height: height)
   )
 }
@@ -414,33 +414,33 @@ private func testHeader(id: some Hashable, text: String, height: CGFloat = 44) -
 private func testFooter(id: some Hashable, text: String, height: CGFloat = 44) -> Footer {
   Footer(
     id: id,
-    component: TestComponent(viewModel: .init(text: text)),
+    component: TestComponent(content: .init(text: text)),
     layoutSize: .estimated(height: height)
   )
 }
 
 private struct TestComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let text: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> UILabel {
     UILabel()
   }
 
   func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
-    view.text = viewModel.text
+    view.text = content.text
   }
 }
 
 private struct FixedHeightComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let text: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
   let height: ListComponentHeight
 
   func makeView(context: ListComponentContext<Void>) -> UILabel {
@@ -448,7 +448,7 @@ private struct FixedHeightComponent: ListComponent {
   }
 
   func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
-    view.text = viewModel.text
+    view.text = content.text
   }
 }
 

@@ -70,7 +70,7 @@ final class InfiniteScrollExampleViewController: UIViewController {
           for item in items {
             Row(
               id: item.id,
-              component: FeedItemComponent(viewModel: .init(item: item))
+              component: FeedItemComponent(content: .init(item: item))
             )
           }
         }
@@ -81,7 +81,7 @@ final class InfiniteScrollExampleViewController: UIViewController {
           Row(
             id: "footer",
             component: FeedFooterComponent(
-              viewModel: .init(
+              content: .init(
                 title: canLoadMore ? "Loading next page..." : "No more items",
                 subtitle: "\(items.count) / \(Const.maximumItemCount) items"
               )
@@ -123,7 +123,7 @@ private struct FeedItem: Identifiable, Equatable {
 }
 
 private struct FeedItemComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let tintColor: UIColor
@@ -135,7 +135,7 @@ private struct FeedItemComponent: ListComponent {
     }
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> FeedItemView {
     FeedItemView()
@@ -143,9 +143,9 @@ private struct FeedItemComponent: ListComponent {
 
   func updateView(_ view: FeedItemView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      tintColor: viewModel.tintColor
+      title: content.title,
+      subtitle: content.subtitle,
+      tintColor: content.tintColor
     )
   }
 }
@@ -221,19 +221,19 @@ private final class FeedItemView: UIView {
 }
 
 private struct FeedFooterComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> FeedFooterView {
     FeedFooterView()
   }
 
   func updateView(_ view: FeedFooterView, context: ListComponentContext<Void>) {
-    view.configure(title: viewModel.title, subtitle: viewModel.subtitle)
+    view.configure(title: content.title, subtitle: content.subtitle)
   }
 }
 

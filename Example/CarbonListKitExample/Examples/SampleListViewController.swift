@@ -47,7 +47,7 @@ final class SampleListViewController: UIViewController {
         Row(
           id: "hero",
           component: SampleRowComponent(
-            viewModel: .init(
+            content: .init(
               title: "Declarative UICollectionView",
               subtitle: "Build sections, rows, and UIKit views without repeating registration or data source code.",
               tintColor: .systemBlue
@@ -62,7 +62,7 @@ final class SampleListViewController: UIViewController {
         Row(
           id: SampleAction.add.rawValue,
           component: SampleRowComponent(
-            viewModel: .init(
+            content: .init(
               title: "Add row",
               subtitle: "Insert a new component with animated DifferenceKit updates.",
               tintColor: .systemTeal
@@ -76,7 +76,7 @@ final class SampleListViewController: UIViewController {
         Row(
           id: SampleAction.shuffle.rawValue,
           component: SampleRowComponent(
-            viewModel: .init(
+            content: .init(
               title: "Shuffle rows",
               subtitle: "Move existing rows while preserving their identity.",
               tintColor: .systemPurple
@@ -90,7 +90,7 @@ final class SampleListViewController: UIViewController {
         Row(
           id: SampleAction.update.rawValue,
           component: SampleRowComponent(
-            viewModel: .init(
+            content: .init(
               title: "Update content",
               subtitle: "Change row content without changing row identity.",
               tintColor: .systemYellow
@@ -109,7 +109,7 @@ final class SampleListViewController: UIViewController {
           Row(
             id: row.id,
             component: SampleRowComponent(
-              viewModel: .init(
+              content: .init(
                 title: row.title,
                 subtitle: row.subtitle,
                 tintColor: row.tintColor
@@ -211,13 +211,13 @@ private struct SampleRow: Identifiable {
 }
 
 private struct SampleRowComponent: ListComponent {
-  struct ViewModel: Equatable {
+  struct Content: Equatable {
     let title: String
     let subtitle: String
     let tintColor: UIColor
   }
 
-  let viewModel: ViewModel
+  let content: Content
 
   func makeView(context: ListComponentContext<Void>) -> SampleRowView {
     SampleRowView()
@@ -225,9 +225,9 @@ private struct SampleRowComponent: ListComponent {
 
   func updateView(_ view: SampleRowView, context: ListComponentContext<Void>) {
     view.configure(
-      title: viewModel.title,
-      subtitle: viewModel.subtitle,
-      tintColor: viewModel.tintColor
+      title: content.title,
+      subtitle: content.subtitle,
+      tintColor: content.tintColor
     )
   }
 }
