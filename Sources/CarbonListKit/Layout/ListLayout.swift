@@ -8,6 +8,14 @@ public enum ListLayout: Equatable {
   case vertical(spacing: CGFloat = 0)
   /// 그리드 레이아웃 (열 수, 아이템 간격, 라인 간격)
   case grid(columns: Int, itemSpacing: CGFloat = 0, lineSpacing: CGFloat = 0)
+  /// 가로로 스크롤되는 orthogonal 레이아웃 (열 수, 아이템 간격, 라인 간격, 스크롤 방식, 예약 높이)
+  case orthogonal(
+    columns: Int = 1,
+    itemSpacing: CGFloat = 0,
+    lineSpacing: CGFloat = 0,
+    scrollingBehavior: ListOrthogonalScrollingBehavior = .continuous,
+    reservedHeight: CGFloat? = nil
+  )
   /// 커스텀 레이아웃 (섹션 제공 클로저)
   case custom((ListLayoutContext) -> NSCollectionLayoutSection)
 
@@ -19,10 +27,43 @@ public enum ListLayout: Equatable {
       return lhsSpacing == rhsSpacing
     case (.grid(let lhsColumns, let lhsItemSpacing, let lhsLineSpacing), .grid(let rhsColumns, let rhsItemSpacing, let rhsLineSpacing)):
       return lhsColumns == rhsColumns && lhsItemSpacing == rhsItemSpacing && lhsLineSpacing == rhsLineSpacing
+    case (
+      .orthogonal(let lhsColumns, let lhsItemSpacing, let lhsLineSpacing, let lhsScrollingBehavior, let lhsReservedHeight),
+      .orthogonal(let rhsColumns, let rhsItemSpacing, let rhsLineSpacing, let rhsScrollingBehavior, let rhsReservedHeight)
+    ):
+      return lhsColumns == rhsColumns
+        && lhsItemSpacing == rhsItemSpacing
+        && lhsLineSpacing == rhsLineSpacing
+        && lhsScrollingBehavior == rhsScrollingBehavior
+        && lhsReservedHeight == rhsReservedHeight
     case (.custom, .custom):
       return false
     default:
       return false
+    }
+  }
+}
+
+/// orthogonal section scrolling에 사용할 스크롤 방식을 정의합니다.
+public enum ListOrthogonalScrollingBehavior: Equatable {
+  case continuous
+  case continuousGroupLeadingBoundary
+  case paging
+  case groupPaging
+  case groupPagingCentered
+
+  func apply(to section: inout NSCollectionLayoutSection) {
+    switch self {
+    case .continuous:
+      section.orthogonalScrollingBehavior = .continuous
+    case .continuousGroupLeadingBoundary:
+      section.orthogonalScrollingBehavior = .continuousGroupLeadingBoundary
+    case .paging:
+      section.orthogonalScrollingBehavior = .paging
+    case .groupPaging:
+      section.orthogonalScrollingBehavior = .groupPaging
+    case .groupPagingCentered:
+      section.orthogonalScrollingBehavior = .groupPagingCentered
     }
   }
 }

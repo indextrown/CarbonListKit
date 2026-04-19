@@ -15,7 +15,7 @@ It removes repeated collection view boilerplate from view controllers:
 - compositional layout setup
 - list reach-end events
 
-CarbonListKit is still early. The current implementation focuses on the core list adapter, SwiftUI bridge, supplementary header/footer support, prefetching, and the example app. Refresh wrappers, orthogonal scrolling, and DocC documentation are planned next.
+The current implementation covers the core list adapter, SwiftUI bridge, supplementary header/footer support, prefetching, orthogonal sections, and the example app. Refresh control wrappers and DocC documentation are planned next.
 
 ## Requirements
 
@@ -232,6 +232,21 @@ Inset modifiers have different meanings:
 | `.contentInsets(...)` | row content area | Keep header/footer full-width and inset only rows |
 | `.sectionInsets(...)` | header/footer + rows | Inset the whole section together, like a card |
 | `.sectionSpacing(...)` | between the current section and the next section | Add section-to-section spacing |
+
+### Orthogonal Sections
+
+Orthogonal sections scroll horizontally while the overall list remains vertical. You can omit most parameters thanks to defaults.
+
+```swift
+Section(id: "carousel") {
+  for item in items {
+    Row(id: item.id, component: CardComponent(viewModel: .init(item: item)))
+  }
+}
+.layout(.orthogonal(itemSpacing: 12, lineSpacing: 12, scrollingBehavior: .continuous, reservedHeight: 180))
+```
+
+`reservedHeight` pre-allocates space for content that may grow taller, so the section and any following content stay stable even before the longest item appears.
 
 ### Header and Footer
 
@@ -764,6 +779,7 @@ Implemented:
 | --- | --- | --- |
 | `Section` | `.layout(.vertical(spacing:))` | Applies a vertical list layout and sets the spacing between rows. |
 | `Section` | `.layout(.grid(columns:itemSpacing:lineSpacing:))` | Applies a grid layout. `itemSpacing` is horizontal spacing between items, and `lineSpacing` is vertical spacing between rows. |
+| `Section` | `.layout(.orthogonal(columns:itemSpacing:lineSpacing:scrollingBehavior:reservedHeight:))` | Applies a horizontally scrolling orthogonal section layout. |
 | `Section` | `.layout(.custom { context in ... })` | Applies a custom `NSCollectionLayoutSection`. |
 | `Section` | `.contentInsets(...)` | Applies insets only to the row content area while keeping header/footer full-width. |
 | `Section` | `.sectionInsets(...)` | Applies insets to the whole section, including header/footer and rows. |
@@ -777,10 +793,8 @@ Implemented:
 
 Planned:
 
-- horizontal orthogonal sections
-- refresh control
-- more tests
-- DocC
+- refresh control wrapper
+- DocC documentation
 
 ## Verification
 

@@ -169,7 +169,7 @@ struct FeedScreen: View {
 | `ListComponentHeight` | component가 row 높이를 자동 측정할지 직접 지정할지 표현합니다. | `.automatic`, `.absolute(...)` |
 | `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality, reuse identifier, height를 관리합니다. | `reuseIdentifier`, `height` |
 | `ListComponentContext` | component의 coordinator를 view 생성/업데이트에 전달합니다. | `context.coordinator` |
-| `ListLayout` | section별 compositional layout 방식을 표현합니다. | `.vertical`, `.grid`, `.custom` |
+| `ListLayout` | section별 compositional layout 방식을 표현합니다. | `.vertical`, `.grid`, `.orthogonal`, `.custom` |
 | `Header` | 섹션 header supplementary view를 선언합니다. | `Header(id:component:layoutSize:)` |
 | `Footer` | 섹션 footer supplementary view를 선언합니다. | `Footer(id:component:layoutSize:)` |
 
@@ -214,6 +214,7 @@ struct FeedScreen: View {
 | --- | --- | --- |
 | `Section` | `.layout(.vertical(spacing:))` | 세로 목록 layout을 적용하고 row 사이 간격을 지정합니다. |
 | `Section` | `.layout(.grid(columns:itemSpacing:lineSpacing:))` | grid layout을 적용합니다. `itemSpacing`은 item 사이 가로 간격, `lineSpacing`은 줄 사이 세로 간격입니다. |
+| `Section` | `.layout(.orthogonal(columns:itemSpacing:lineSpacing:scrollingBehavior:reservedHeight:))` | 가로로 스크롤되는 orthogonal section layout을 적용합니다. |
 | `Section` | `.layout(.custom { context in ... })` | 직접 만든 `NSCollectionLayoutSection`을 적용합니다. |
 | `Section` | `.contentInsets(...)` | header/footer는 전체 폭으로 유지하고 row 영역에만 inset을 적용합니다. |
 | `Section` | `.sectionInsets(...)` | header/footer와 row를 함께 감싸는 전체 section inset을 적용합니다. |
@@ -229,7 +230,6 @@ struct FeedScreen: View {
 
 | 기능 | 상태 |
 | --- | --- |
-| orthogonal section scrolling | 예정 |
 | refresh control wrapper | 예정 |
 | DocC 문서 | 예정 |
 
@@ -300,6 +300,20 @@ Section(id: "actions") {
 ```
 
 `grid`의 `itemSpacing`은 item 사이의 가로 간격만 담당합니다. 섹션 바깥 좌우 여백은 `contentInsets`나 `sectionInsets`로 명시합니다.
+
+orthogonal section:
+
+```swift
+Section(id: "carousel") {
+  for item in items {
+    Row(id: item.id, component: CardComponent(viewModel: .init(item: item)))
+  }
+}
+.layout(.orthogonal(itemSpacing: 12, lineSpacing: 12, scrollingBehavior: .continuous, reservedHeight: 180))
+```
+
+`orthogonal`은 가로로 스크롤되는 섹션입니다. 필요한 값만 적고 나머지는 기본값으로 둘 수 있습니다.
+`reservedHeight`는 내용이 길어질 수 있는 경우 미리 확보할 높이를 지정합니다.
 
 custom compositional layout:
 

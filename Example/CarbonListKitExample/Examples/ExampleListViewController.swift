@@ -171,7 +171,22 @@ final class ExampleListViewController: UIViewController {
         .onSelect { [weak self] _ in
           self?.navigationController?.pushViewController(KoreanCompleteExampleViewController(), animated: true)
         }
-        
+
+        Row(
+          id: "orthogonal-section",
+          component: ExampleMenuComponent(
+            viewModel: .init(
+              title: "Orthogonal Section",
+              subtitle: "Scroll cards horizontally inside a vertical feed.",
+              badge: "Carousel",
+              tintColor: .systemRed
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(OrthogonalSectionExampleViewController(), animated: true)
+        }
+
         Row(
           id: "practice",
           component: ExampleMenuComponent(

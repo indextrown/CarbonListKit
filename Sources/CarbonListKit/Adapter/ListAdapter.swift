@@ -593,7 +593,7 @@ public final class ListAdapter: NSObject {
       }
 
       let section = self.list.sections[sectionIndex]
-      let layoutSection: NSCollectionLayoutSection
+      var layoutSection: NSCollectionLayoutSection
       let layoutSectionContentInsets: NSDirectionalEdgeInsets
       switch section.layout {
       case .vertical(let spacing):
@@ -610,6 +610,16 @@ public final class ListAdapter: NSObject {
           horizontalInsets: section.horizontalContentInsets
         )
         layoutSectionContentInsets = section.sectionInsets.adding(section.verticalContentInsets)
+      case .orthogonal(let columns, let itemSpacing, let lineSpacing, let scrollingBehavior, let reservedHeight):
+        layoutSection = Self.makeOrthogonalSection(
+          columns: columns,
+          itemSpacing: itemSpacing,
+          reservedHeight: reservedHeight,
+          scrollingBehavior: scrollingBehavior
+        )
+        layoutSectionContentInsets = section.sectionInsets.adding(section.contentInsets).adding(
+          .init(top: lineSpacing, leading: 0, bottom: lineSpacing, trailing: 0)
+        )
       case .custom(let provider):
         layoutSection = provider(
           .init(
@@ -622,6 +632,9 @@ public final class ListAdapter: NSObject {
       }
 
       layoutSection.contentInsets = layoutSectionContentInsets
+      if let orthogonalScrollingBehavior = section.orthogonalScrollingBehavior {
+        orthogonalScrollingBehavior.apply(to: &layoutSection)
+      }
       layoutSection.boundarySupplementaryItems += Self.makeBoundarySupplementaryItems(
         for: section,
         isLastSection: sectionIndex == self.list.sections.index(before: self.list.sections.endIndex)
@@ -686,7 +699,7 @@ public final class ListAdapter: NSObject {
     )
     group.contentInsets = horizontalInsets
 
-    let section = NSCollectionLayoutSection(group: group)
+    var section = NSCollectionLayoutSection(group: group)
     section.interGroupSpacing = spacing
     return section
   }
@@ -716,8 +729,34 @@ public final class ListAdapter: NSObject {
     group.contentInsets = horizontalInsets
     group.interItemSpacing = .fixed(itemSpacing)
 
-    let section = NSCollectionLayoutSection(group: group)
+    var section = NSCollectionLayoutSection(group: group)
     section.interGroupSpacing = lineSpacing
+    return section
+  }
+
+  private static func makeOrthogonalSection(
+    columns: Int,
+    itemSpacing: CGFloat,
+    reservedHeight: CGFloat?,
+    scrollingBehavior: ListOrthogonalScrollingBehavior
+  ) -> NSCollectionLayoutSection {
+    let columns = max(columns, 1)
+    let estimatedHeight = max(Self.estimatedItemHeight, reservedHeight ?? Self.estimatedItemHeight)
+    let itemSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1),
+      heightDimension: .estimated(estimatedHeight)
+    )
+    let item = NSCollectionLayoutItem(layoutSize: itemSize)
+
+    let groupSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1 / CGFloat(columns)),
+      heightDimension: .estimated(estimatedHeight)
+    )
+    let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+
+    var section = NSCollectionLayoutSection(group: group)
+    section.interGroupSpacing = itemSpacing
+    scrollingBehavior.apply(to: &section)
     return section
   }
 }

@@ -11,6 +11,8 @@ public struct Section: Identifiable, Equatable {
   public var rows: [Row]
   /// 섹션의 레이아웃
   public var layout: ListLayout
+  /// orthogonal scrolling 동작
+  public var orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior?
   /// 섹션의 콘텐츠 인셋
   public var contentInsets: NSDirectionalEdgeInsets
   /// header/footer를 포함한 전체 섹션 인셋
@@ -38,6 +40,7 @@ public struct Section: Identifiable, Equatable {
     id: some Hashable,
     rows: [Row],
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -47,6 +50,7 @@ public struct Section: Identifiable, Equatable {
     self.id = id
     self.rows = rows
     self.layout = layout
+    self.orthogonalScrollingBehavior = orthogonalScrollingBehavior
     self.contentInsets = contentInsets
     self.sectionInsets = sectionInsets
     self.sectionSpacing = sectionSpacing
@@ -63,6 +67,7 @@ public struct Section: Identifiable, Equatable {
   public init(
     id: some Hashable,
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -73,6 +78,7 @@ public struct Section: Identifiable, Equatable {
     self.id = id
     self.rows = rows()
     self.layout = layout
+    self.orthogonalScrollingBehavior = orthogonalScrollingBehavior
     self.contentInsets = contentInsets
     self.sectionInsets = sectionInsets
     self.sectionSpacing = sectionSpacing
@@ -102,6 +108,7 @@ public struct Section: Identifiable, Equatable {
   public init(
     id: some Hashable,
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -112,6 +119,7 @@ public struct Section: Identifiable, Equatable {
     self.id = id
     self.rows = rows()
     self.layout = layout
+    self.orthogonalScrollingBehavior = orthogonalScrollingBehavior
     self.contentInsets = contentInsets
     self.sectionInsets = sectionInsets
     self.sectionSpacing = sectionSpacing
@@ -125,6 +133,7 @@ public struct Section: Identifiable, Equatable {
   /// diff 안정성이 중요한 동적 섹션에서는 명시적인 `id:` 사용을 권장합니다.
   public init(
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -136,6 +145,7 @@ public struct Section: Identifiable, Equatable {
     self.init(
       id: Self.automaticID(fileID: fileID, line: line, column: column),
       layout: layout,
+      orthogonalScrollingBehavior: orthogonalScrollingBehavior,
       contentInsets: contentInsets,
       sectionInsets: sectionInsets,
       sectionSpacing: sectionSpacing,
@@ -147,6 +157,7 @@ public struct Section: Identifiable, Equatable {
   /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
   public init(
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -160,6 +171,7 @@ public struct Section: Identifiable, Equatable {
     self.init(
       id: Self.automaticID(fileID: fileID, line: line, column: column),
       layout: layout,
+      orthogonalScrollingBehavior: orthogonalScrollingBehavior,
       contentInsets: contentInsets,
       sectionInsets: sectionInsets,
       sectionSpacing: sectionSpacing,
@@ -173,6 +185,7 @@ public struct Section: Identifiable, Equatable {
   public init(
     id: some Hashable,
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -182,6 +195,7 @@ public struct Section: Identifiable, Equatable {
     self.init(
       id: id,
       layout: layout,
+      orthogonalScrollingBehavior: orthogonalScrollingBehavior,
       contentInsets: contentInsets,
       sectionInsets: sectionInsets,
       sectionSpacing: sectionSpacing,
@@ -195,6 +209,7 @@ public struct Section: Identifiable, Equatable {
   /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
   public init(
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -207,6 +222,7 @@ public struct Section: Identifiable, Equatable {
     self.init(
       id: Self.automaticID(fileID: fileID, line: line, column: column),
       layout: layout,
+      orthogonalScrollingBehavior: orthogonalScrollingBehavior,
       contentInsets: contentInsets,
       sectionInsets: sectionInsets,
       sectionSpacing: sectionSpacing,
@@ -220,6 +236,7 @@ public struct Section: Identifiable, Equatable {
   public init(
     id: some Hashable,
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -229,6 +246,7 @@ public struct Section: Identifiable, Equatable {
     self.init(
       id: id,
       layout: layout,
+      orthogonalScrollingBehavior: orthogonalScrollingBehavior,
       contentInsets: contentInsets,
       sectionInsets: sectionInsets,
       sectionSpacing: sectionSpacing,
@@ -242,6 +260,7 @@ public struct Section: Identifiable, Equatable {
   /// 자동 id는 호출 위치(`#fileID`, `#line`, `#column`)를 기반으로 만들어집니다.
   public init(
     layout: ListLayout = .vertical(),
+    orthogonalScrollingBehavior: ListOrthogonalScrollingBehavior? = nil,
     contentInsets: NSDirectionalEdgeInsets = .zero,
     sectionInsets: NSDirectionalEdgeInsets = .zero,
     sectionSpacing: CGFloat = 0,
@@ -254,6 +273,7 @@ public struct Section: Identifiable, Equatable {
     self.init(
       id: Self.automaticID(fileID: fileID, line: line, column: column),
       layout: layout,
+      orthogonalScrollingBehavior: orthogonalScrollingBehavior,
       contentInsets: contentInsets,
       sectionInsets: sectionInsets,
       sectionSpacing: sectionSpacing,
@@ -277,6 +297,26 @@ public struct Section: Identifiable, Equatable {
   /// - Returns: 레이아웃이 설정된 새로운 Section
   public func withSectionLayout(_ layout: ListLayout) -> Self {
     self.layout(layout)
+  }
+
+  /// 섹션 내부 아이템의 orthogonal scrolling 동작을 설정합니다.
+  /// - Parameter behavior: 적용할 orthogonal scrolling 동작
+  /// - Returns: orthogonal scrolling 동작이 설정된 새로운 Section
+  public func orthogonalScrollingBehavior(
+    _ behavior: ListOrthogonalScrollingBehavior?
+  ) -> Self {
+    var copy = self
+    copy.orthogonalScrollingBehavior = behavior
+    return copy
+  }
+
+  /// 섹션 내부 아이템의 orthogonal scrolling 동작을 설정합니다. (orthogonalScrollingBehavior 메서드의 별칭)
+  /// - Parameter behavior: 적용할 orthogonal scrolling 동작
+  /// - Returns: orthogonal scrolling 동작이 설정된 새로운 Section
+  public func withOrthogonalScrollingBehavior(
+    _ behavior: ListOrthogonalScrollingBehavior?
+  ) -> Self {
+    orthogonalScrollingBehavior(behavior)
   }
 
   /// 섹션의 콘텐츠 인셋을 설정합니다.
@@ -365,6 +405,7 @@ public struct Section: Identifiable, Equatable {
     lhs.id == rhs.id
       && lhs.rows == rhs.rows
       && lhs.layout == rhs.layout
+      && lhs.orthogonalScrollingBehavior == rhs.orthogonalScrollingBehavior
       && lhs.contentInsets.top == rhs.contentInsets.top
       && lhs.contentInsets.leading == rhs.contentInsets.leading
       && lhs.contentInsets.bottom == rhs.contentInsets.bottom
@@ -415,6 +456,7 @@ extension Section: DifferentiableSection {
   public func isContentEqual(to source: Section) -> Bool {
     id == source.id
       && layout == source.layout
+      && orthogonalScrollingBehavior == source.orthogonalScrollingBehavior
       && contentInsets.top == source.contentInsets.top
       && contentInsets.leading == source.contentInsets.leading
       && contentInsets.bottom == source.contentInsets.bottom

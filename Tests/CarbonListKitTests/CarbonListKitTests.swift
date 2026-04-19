@@ -90,6 +90,16 @@ struct SectionModifierTests {
     #expect(section.sectionSpacing == 24)
   }
 
+  @Test("orthogonal scrolling behavior는 저장되고 alias도 동일하다")
+  func orthogonalScrollingBehaviorIsStoredOnSection() {
+    let behavior: ListOrthogonalScrollingBehavior = .continuousGroupLeadingBoundary
+    let primary = makeSection().orthogonalScrollingBehavior(behavior)
+    let aliased = makeSection().withOrthogonalScrollingBehavior(behavior)
+
+    #expect(primary.orthogonalScrollingBehavior == behavior)
+    #expect(primary == aliased)
+  }
+
   @Test("with 접두어 modifier는 기본 modifier와 같은 결과를 만든다")
   func legacyStyleModifierAliasesMatchPrimaryModifiers() {
     let contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 2, bottom: 3, trailing: 4)
@@ -161,9 +171,13 @@ struct SectionEqualityTests {
     let base = makeSection()
 
     #expect(base != base.layout(.grid(columns: 2, itemSpacing: 8, lineSpacing: 12)))
+    #expect(base != base.layout(.orthogonal()))
+    #expect(base != base.layout(.orthogonal(columns: 2, itemSpacing: 8, lineSpacing: 12)))
+    #expect(base != base.layout(.orthogonal(reservedHeight: 120)))
     #expect(base != base.contentInsets(.init(top: 1, leading: 0, bottom: 0, trailing: 0)))
     #expect(base != base.sectionInsets(.init(top: 0, leading: 1, bottom: 0, trailing: 0)))
     #expect(base != base.sectionSpacing(20))
+    #expect(base != base.orthogonalScrollingBehavior(.paging))
     #expect(base != base.header(testHeader(id: "header", text: "헤더")))
     #expect(base != base.footer(testFooter(id: "footer", text: "푸터")))
   }
