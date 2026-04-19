@@ -19,6 +19,7 @@ final class ComponentCell: UICollectionViewCell {
   private var renderedComponent: AnyListComponent?
   private var coordinator: Any?
   private var rowID: AnyHashable?
+  private var renderedContainerWidth: CGFloat?
   private var sizeCacheReader: ((SizeCacheKey) -> SizeCacheEntry?)?
   private var sizeCacheWriter: ((SizeCacheKey, SizeCacheEntry) -> Void)?
 
@@ -42,6 +43,7 @@ final class ComponentCell: UICollectionViewCell {
   override func prepareForReuse() {
     super.prepareForReuse()
     rowID = nil
+    renderedContainerWidth = nil
     sizeCacheReader = nil
     sizeCacheWriter = nil
   }
@@ -54,9 +56,15 @@ final class ComponentCell: UICollectionViewCell {
     let attributes = super.preferredLayoutAttributesFitting(layoutAttributes)
     let width = layoutAttributes.size.width
 
-    if case .absolute(let height) = renderedComponent?.height {
+    switch renderedComponent?.height {
+    case .absolute(let height):
       attributes.size.height = height
       return attributes
+    case .square:
+      attributes.size.height = width
+      return attributes
+    default:
+      break
     }
 
     if let key = sizeCacheKey(width: width),
@@ -94,19 +102,48 @@ final class ComponentCell: UICollectionViewCell {
   /// 컴포넌트 타입이 변경되면 뷰를 새로 생성하고, 그렇지 않으면 업데이트합니다.
   /// - Parameter component: 렌더링할 컴포넌트
   func render(component: AnyListComponent) {
+    render(component: component, containerWidth: contentView.bounds.width)
+  }
+
+  func render(component: AnyListComponent, containerWidth: CGFloat) {
     if renderedComponent?.componentTypeID != component.componentTypeID {
       renderedView?.removeFromSuperview()
       coordinator = component.makeCoordinator()
-      let view = component.makeView(coordinator: coordinator ?? ())
+      let view = component.makeView(
+        coordinator: coordinator ?? (),
+        containerWidth: containerWidth
+      )
       component.layout(view: view, in: contentView)
       renderedView = view
     }
 
     if let renderedView {
-      component.update(view: renderedView, coordinator: coordinator ?? ())
+      component.update(
+        view: renderedView,
+        coordinator: coordinator ?? (),
+        containerWidth: containerWidth
+      )
     }
 
     renderedComponent = component
+    renderedContainerWidth = containerWidth
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+
+    guard let renderedComponent,
+          let renderedView,
+          renderedContainerWidth != contentView.bounds.width else {
+      return
+    }
+
+    renderedComponent.update(
+      view: renderedView,
+      coordinator: coordinator ?? (),
+      containerWidth: contentView.bounds.width
+    )
+    renderedContainerWidth = contentView.bounds.width
   }
 
   /// 셀의 size cache 입출력 클로저를 설정합니다.

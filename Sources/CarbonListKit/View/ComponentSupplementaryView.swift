@@ -21,6 +21,7 @@ final class ComponentSupplementaryView: UICollectionReusableView {
   private var renderedView: UIView?
   private var renderedComponent: AnyListComponent?
   private var coordinator: Any?
+  private var renderedContainerWidth: CGFloat?
   private var contentContainerBottomConstraint: NSLayoutConstraint?
   private var sectionID: AnyHashable?
   private var supplementaryID: AnyHashable?
@@ -49,6 +50,7 @@ final class ComponentSupplementaryView: UICollectionReusableView {
   override func prepareForReuse() {
     super.prepareForReuse()
     bottomSpacing = 0
+    renderedContainerWidth = nil
     sectionID = nil
     supplementaryID = nil
     kind = nil
@@ -96,19 +98,49 @@ final class ComponentSupplementaryView: UICollectionReusableView {
   /// 컴포넌트를 렌더링합니다.
   /// - Parameter component: 렌더링할 컴포넌트
   func render(component: AnyListComponent) {
+    render(component: component, containerWidth: contentContainerView.bounds.width)
+  }
+
+  func render(component: AnyListComponent, containerWidth: CGFloat) {
     if renderedComponent?.componentTypeID != component.componentTypeID {
       renderedView?.removeFromSuperview()
       coordinator = component.makeCoordinator()
-      let view = component.makeView(coordinator: coordinator ?? ())
+      let view = component.makeView(
+        coordinator: coordinator ?? (),
+        containerWidth: containerWidth
+      )
       component.layout(view: view, in: contentContainerView)
       renderedView = view
     }
 
     if let renderedView {
-      component.update(view: renderedView, coordinator: coordinator ?? ())
+      component.update(
+        view: renderedView,
+        coordinator: coordinator ?? (),
+        containerWidth: containerWidth
+      )
     }
 
     renderedComponent = component
+    renderedContainerWidth = containerWidth
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+
+    let width = contentContainerView.bounds.width
+    guard let renderedComponent,
+          let renderedView,
+          renderedContainerWidth != width else {
+      return
+    }
+
+    renderedComponent.update(
+      view: renderedView,
+      coordinator: coordinator ?? (),
+      containerWidth: width
+    )
+    renderedContainerWidth = width
   }
 
   /// supplementary view의 size cache 입출력 클로저를 설정합니다.

@@ -197,9 +197,9 @@ struct SampleComponent: SwiftUIComponent {
 | `Cell` | `Row`와 같은 타입입니다. cell 중심 네이밍을 선호할 때 씁니다. | `didSelect`, `willDisplay` |
 | `ListComponent` | 앱 데이터를 UIKit view로 렌더링합니다. | `makeView`, `updateView`, `layoutView`, `height`, `makeCoordinator` |
 | `SwiftUIComponent` | 같은 컴포넌트를 SwiftUI `View`로도 직접 사용합니다. | `makeSwiftUIView`, `body` |
-| `ListComponentHeight` | component가 row 높이를 자동 측정할지 직접 지정할지 표현합니다. | `.automatic`, `.absolute(...)` |
+| `ListComponentHeight` | component가 row 높이를 자동 측정할지 직접 지정할지 표현합니다. | `.automatic`, `.absolute(...)`, `.square` |
 | `AnyListComponent` | 내부 type erasure wrapper입니다. diff equality, reuse identifier, height를 관리합니다. | `reuseIdentifier`, `height` |
-| `ListComponentContext` | component의 coordinator를 view 생성/업데이트에 전달합니다. | `context.coordinator` |
+| `ListComponentContext` | component의 coordinator와 container width를 view 생성/업데이트에 전달합니다. | `context.coordinator`, `context.containerWidth` |
 | `ListLayout` | section별 compositional layout 방식을 표현합니다. | `.vertical`, `.grid`, `.orthogonal`, `.custom` |
 | `Header` | 섹션 header supplementary view를 선언합니다. | `Header(id:component:layoutSize:)` |
 | `Footer` | 섹션 footer supplementary view를 선언합니다. | `Footer(id:component:layoutSize:)` |
@@ -216,7 +216,7 @@ struct SampleComponent: SwiftUIComponent {
 | UIKit view component | 각 row는 일반 `UIView` 기반 component로 렌더링됩니다. | `ListComponent` |
 | Auto Layout 렌더링 | 기본적으로 component view를 cell content view edge에 고정합니다. | `layoutView` |
 | self-sizing cell | component view의 Auto Layout 크기를 collection view cell 크기에 반영합니다. | `ComponentCell` |
-| component height | component가 row 높이를 직접 지정할 수 있습니다. 지정하지 않으면 self-sizing을 사용합니다. | `ListComponent.height`, `ListComponentHeight` |
+| component height | component가 row 높이를 직접 지정할 수 있습니다. 지정하지 않으면 self-sizing을 사용합니다. `.square`를 쓰면 셀 너비와 같은 높이를 사용할 수 있습니다. | `ListComponent.height`, `ListComponentHeight` |
 | coordinator | component가 재사용되는 동안 유지할 상태 객체를 만들 수 있습니다. | `makeCoordinator`, `ListComponentContext` |
 | reuse identifier override | 같은 component type을 여러 cell 종류로 나누어 등록할 수 있습니다. | `var reuseIdentifier` |
 | diff update | DifferenceKit으로 section/row 삽입, 삭제, 이동, 업데이트를 적용합니다. | `adapter.apply(updateStrategy:)` |
@@ -662,6 +662,8 @@ struct FixedArticleComponent: ListComponent {
 
 `.absolute`를 사용하면 `ComponentCell`이 `systemLayoutSizeFitting`을 건너뛰고 지정한 높이를 바로 사용합니다. 높이가 콘텐츠보다 작으면 내부 view가 압축될 수 있으므로, 고정 높이에 맞는 view 구성을 함께 설계해야 합니다.
 
+`.square`를 사용하면 셀의 너비와 같은 높이를 사용합니다. grid처럼 폭이 레이아웃에서 정해지는 경우 정사각형 셀을 만들 때 유용합니다.
+
 component가 상태 객체를 가져야 한다면 coordinator를 사용합니다.
 
 ```swift
@@ -735,7 +737,7 @@ Example/
 | `Prefetch` | collection view가 아이템을 prefetch할 때 이미지를 미리 로드하고 캐시에 저장합니다. prefetch된 이미지는 즉시 표시되어 부드러운 스크롤을 제공합니다. |
 | `Header & Footer` | 실제 supplementary header/footer, section spacing, grid와 함께 쓰는 예제를 보여줍니다. |
 | `Header & Footer DSL` | `Section { rows } header: { ... } footer: { ... }` 문법과 inset modifier 차이를 보여줍니다. |
-| `Component Height` | `.automatic` self-sizing row와 component가 직접 지정한 `.absolute` row 높이를 비교합니다. |
+| `Component Height` | `.automatic` self-sizing row와 component가 직접 지정한 `.absolute`, `.square` row 높이를 비교합니다. |
 | `SwiftUI CarbonList` | SwiftUI 화면에서 `CarbonList { Section { Row } }` DSL을 직접 쓰는 예제를 보여줍니다. |
 | `한글 종합 예제` | diff, Content, 이벤트, vertical/grid/custom layout, 무한 스크롤을 한 화면에서 확인합니다. |
 
@@ -799,6 +801,7 @@ graph TD
   Component --> Height["ListComponentHeight"]
   Height --> Automatic["automatic self-sizing"]
   Height --> Absolute["absolute height"]
+  Height --> Square["square height"]
   Component --> View["UIView"]
   Component --> Coordinator["Coordinator"]
 
@@ -852,6 +855,9 @@ sequenceDiagram
   Cell->>Component: height 확인
   alt height == .absolute
     Component-->>Cell: 지정 높이 반환
+    Cell-->>CV: preferred height 적용
+  else height == .square
+    Component-->>Cell: 셀 너비와 같은 높이 반환
     Cell-->>CV: preferred height 적용
   else height == .automatic
     Cell->>Layout: systemLayoutSizeFitting()

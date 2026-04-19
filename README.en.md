@@ -458,6 +458,8 @@ struct FixedArticleComponent: ListComponent {
 
 When a component returns `.absolute`, `ComponentCell` skips `systemLayoutSizeFitting` and applies that height directly. Make sure the component view is designed for the fixed height, otherwise its content may be compressed.
 
+`.square` uses the cell's width as its height. It is handy for grids where the layout determines the width and you want a perfectly square item without calculating or passing width through your content.
+
 ## Entity vs Component Content
 
 App entities should stay separate from component `Content`.
@@ -741,7 +743,7 @@ Examples:
 - `Prefetch`: prefetches images through collection view prefetching and stores them in cache
 - `Header & Footer`: demonstrates real supplementary header/footer views, section spacing, and grid usage
 - `Header & Footer DSL`: demonstrates `Section { rows } header: { ... } footer: { ... }` and inset modifier differences
-- `Component Height`: compares `.automatic` self-sizing rows with component-defined `.absolute` row heights
+- `Component Height`: compares `.automatic` self-sizing rows with component-defined `.absolute` and `.square` row heights
 - `SwiftUI CarbonList`: demonstrates the `CarbonList { Section { Row } }` DSL directly in a SwiftUI screen
 - `한글 종합 예제`: shows diffing, Content mapping, events, layouts, and infinite scrolling in one screen
 
@@ -783,7 +785,9 @@ Implemented:
 - UIKit delegate ownership
 - Auto Layout based component rendering
 - self-sizing collection view cells
+- component context exposes container width during make/update
 - component-defined row heights
+- square row heights
 - component coordinators
 - component reuseIdentifier override
 - vertical layout
@@ -850,6 +854,7 @@ CarbonListKit takes inspiration from component-based list frameworks such as Kar
 | Layout after reload | `ListAdapterConfiguration.performsLayoutAfterReload` controls whether `layoutIfNeeded()` is forced after `reloadData`. | Can reduce immediate layout work during initial loads and large reloads. |
 | Cell size cache | Caches self-sizing cell heights by `Row.id + component type + width`. Cached heights are reused only when the stored component equals the current component. | Reduces repeated Auto Layout measurement during scrolling. |
 | Component absolute height | Skips `systemLayoutSizeFitting` when a component provides an `.absolute` height. | Removes Auto Layout measurement cost for rows whose height is already known and makes layout more predictable. |
+| Component square height | Uses the cell width as the height when a component provides `.square`. | Makes square grid cells easy to express without manually passing width through content. |
 | Supplementary size cache | Caches header/footer heights by `sectionID + supplementaryID + kind + component type + width + bottomSpacing`. | Reduces supplementary self-sizing work while safely distinguishing section spacing changes. |
 | Prefetch management | Stores prefetch operations by `Row.id` instead of `IndexPath`, and cancels operations for rows removed by a list apply. | Keeps prefetch work more stable across diff updates and row moves. |
 | Header/footer updates | Re-renders visible supplementary views when only header/footer content changes, instead of reloading the entire section. | Reduces row reload work for screens where headers or footers change frequently. |
@@ -877,6 +882,7 @@ graph TD
   Component --> Height["ListComponentHeight"]
   Height --> Automatic["automatic self-sizing"]
   Height --> Absolute["absolute height"]
+  Height --> Square["square height"]
   Component --> View["UIView"]
   Component --> Coordinator["Coordinator"]
 
@@ -930,6 +936,9 @@ sequenceDiagram
   Cell->>Component: Read height
   alt height == .absolute
     Component-->>Cell: Return fixed height
+    Cell-->>CV: Apply preferred height
+  else height == .square
+    Component-->>Cell: Return width as height
     Cell-->>CV: Apply preferred height
   else height == .automatic
     Cell->>Layout: systemLayoutSizeFitting()

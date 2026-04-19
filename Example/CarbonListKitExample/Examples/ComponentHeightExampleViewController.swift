@@ -220,7 +220,7 @@ private struct FixedHeightComponent: ListComponent {
   let content: Content
 
   var height: ListComponentHeight {
-    .absolute(content.height)
+     .absolute(content.height)
   }
 
   func makeView(context: ListComponentContext<Void>) -> HeightCardView {

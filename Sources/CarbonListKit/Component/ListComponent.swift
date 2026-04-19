@@ -7,10 +7,16 @@ public struct ListComponentContext<Coordinator> {
   /// 코디네이터 인스턴스
   public let coordinator: Coordinator
 
+  /// 컨테이너의 현재 너비
+  public let containerWidth: CGFloat
+
   /// ListComponentContext를 초기화합니다.
-  /// - Parameter coordinator: 코디네이터 인스턴스
-  public init(coordinator: Coordinator) {
+  /// - Parameters:
+  ///   - coordinator: 코디네이터 인스턴스
+  ///   - containerWidth: 컨테이너의 현재 너비
+  public init(coordinator: Coordinator, containerWidth: CGFloat = 0) {
     self.coordinator = coordinator
+    self.containerWidth = containerWidth
   }
 }
 
@@ -20,6 +26,8 @@ public enum ListComponentHeight: Equatable {
   case automatic
   /// 지정한 값으로 높이를 고정합니다.
   case absolute(CGFloat)
+  /// 셀의 너비와 같은 높이를 사용합니다.
+  case square
 }
 
 /// 리스트에서 사용할 수 있는 컴포넌트를 정의하는 프로토콜입니다.

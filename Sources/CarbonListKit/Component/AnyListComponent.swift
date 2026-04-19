@@ -37,13 +37,13 @@ public struct AnyListComponent: Equatable {
   }
 
   /// 뷰를 생성합니다.
-  func makeView(coordinator: Any) -> UIView {
-    box.makeView(coordinator: coordinator)
+  func makeView(coordinator: Any, containerWidth: CGFloat) -> UIView {
+    box.makeView(coordinator: coordinator, containerWidth: containerWidth)
   }
 
   /// 뷰를 업데이트합니다.
-  func update(view: UIView, coordinator: Any) {
-    box.update(view: view, coordinator: coordinator)
+  func update(view: UIView, coordinator: Any, containerWidth: CGFloat) {
+    box.update(view: view, coordinator: coordinator, containerWidth: containerWidth)
   }
 
   /// 뷰를 레이아웃합니다.
@@ -91,8 +91,8 @@ private protocol AnyListComponentBox {
   var content: AnyEquatableValue { get }
 
   func makeCoordinator() -> Any
-  func makeView(coordinator: Any) -> UIView
-  func update(view: UIView, coordinator: Any)
+  func makeView(coordinator: Any, containerWidth: CGFloat) -> UIView
+  func update(view: UIView, coordinator: Any, containerWidth: CGFloat)
   func layout(view: UIView, in container: UIView)
 }
 
@@ -131,19 +131,24 @@ private struct ListComponentBox<Component: ListComponent>: AnyListComponentBox {
   }
 
   /// 뷰를 생성합니다.
-  func makeView(coordinator: Any) -> UIView {
+  func makeView(coordinator: Any, containerWidth: CGFloat) -> UIView {
     let coordinator = coordinator as! Component.Coordinator
-    return component.makeView(context: .init(coordinator: coordinator))
+    return component.makeView(
+      context: .init(coordinator: coordinator, containerWidth: containerWidth)
+    )
   }
 
   /// 뷰를 업데이트합니다.
-  func update(view: UIView, coordinator: Any) {
+  func update(view: UIView, coordinator: Any, containerWidth: CGFloat) {
     guard let view = view as? Component.View,
           let coordinator = coordinator as? Component.Coordinator else {
       return
     }
 
-    component.updateView(view, context: .init(coordinator: coordinator))
+    component.updateView(
+      view,
+      context: .init(coordinator: coordinator, containerWidth: containerWidth)
+    )
   }
 
   /// 뷰를 레이아웃합니다.

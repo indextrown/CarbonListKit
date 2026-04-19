@@ -63,6 +63,20 @@ struct SectionHeaderFooterDSLTests {
   }
 }
 
+@Suite("Component Context")
+struct ComponentContextTests {
+  @Test("containerWidth는 makeView와 updateView context에 전달된다")
+  func containerWidthIsPropagatedToComponentContext() {
+    let component = AnyListComponent(WidthAwareComponent(content: .init(text: "내용")))
+
+    let view = component.makeView(coordinator: (), containerWidth: 320) as! WidthAwareView
+    #expect(view.createdWidth == 320)
+
+    component.update(view: view, coordinator: (), containerWidth: 320)
+    #expect(view.updatedWidths == [320])
+  }
+}
+
 @Suite("Section Modifiers")
 struct SectionModifierTests {
   @Test("contentInsets는 내부 row 영역에만 저장된다")
@@ -365,6 +379,21 @@ struct ComponentHeightTests {
 
     #expect(fittedAttributes.size.height == 123)
   }
+
+  @MainActor
+  @Test("ComponentCell은 square height면 셀 폭과 같은 높이를 사용한다")
+  func componentCellUsesSquareHeight() {
+    let cell = ComponentCell(frame: CGRect(x: 0, y: 0, width: 100, height: 80))
+    let component = SquareHeightComponent(content: .init(text: "내용"))
+    cell.render(component: AnyListComponent(component))
+
+    let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: 0, section: 0))
+    attributes.size = CGSize(width: 100, height: 80)
+
+    let fittedAttributes = cell.preferredLayoutAttributesFitting(attributes)
+
+    #expect(fittedAttributes.size.height == 100)
+  }
 }
 
 #if canImport(SwiftUI)
@@ -450,6 +479,49 @@ private struct FixedHeightComponent: ListComponent {
   func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
     view.text = content.text
   }
+}
+
+private struct SquareHeightComponent: ListComponent {
+  struct Content: Equatable {
+    let text: String
+  }
+
+  let content: Content
+
+  var height: ListComponentHeight {
+    .square
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> UILabel {
+    UILabel()
+  }
+
+  func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
+    view.text = content.text
+  }
+}
+
+private struct WidthAwareComponent: ListComponent {
+  struct Content: Equatable {
+    let text: String
+  }
+
+  let content: Content
+
+  func makeView(context: ListComponentContext<Void>) -> WidthAwareView {
+    let view = WidthAwareView()
+    view.createdWidth = context.containerWidth
+    return view
+  }
+
+  func updateView(_ view: WidthAwareView, context: ListComponentContext<Void>) {
+    view.updatedWidths.append(context.containerWidth)
+  }
+}
+
+private final class WidthAwareView: UIView {
+  var createdWidth: CGFloat?
+  var updatedWidths: [CGFloat] = []
 }
 
 private extension NSDirectionalEdgeInsets {
