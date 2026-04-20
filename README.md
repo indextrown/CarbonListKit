@@ -224,7 +224,7 @@ struct SampleComponent: SwiftUIComponent {
 | apply completion | list 적용이 끝난 뒤 후처리를 실행합니다. | `completion` |
 | update queue | 업데이트 중 다시 `apply`하면 마지막 요청을 보관했다가 이어서 적용합니다. | last-write-wins |
 | snapshot 조회 | 현재 적용된 list 상태를 가져옵니다. | `adapter.snapshot()` |
-| pull-to-refresh | 새로고침 문구, 색상, 폰트, 인디케이터 타입을 지정하고 sync/async 새로고침 핸들러를 실행합니다. | `List.pullToRefresh(style:_:)` |
+| pull-to-refresh | 새로고침 문구, 색상, 폰트, 인디케이터 타입을 지정하고 async 새로고침 핸들러를 실행합니다. | `List.pullToRefresh(style:_:)` |
 | vertical layout | 세로 리스트 section을 만듭니다. | `.layout(.vertical(spacing:))` |
 | grid layout | 지정한 열 수의 grid section을 만듭니다. | `.layout(.grid(columns:itemSpacing:lineSpacing:))` |
 | custom layout | 직접 만든 `NSCollectionLayoutSection`을 section에 적용합니다. | `.layout(.custom { context in ... })` |
@@ -256,7 +256,7 @@ struct SampleComponent: SwiftUIComponent {
 | `Row` / `Cell` | `.onSelect(...)`, `.didSelect(...)` | row 선택 이벤트를 받습니다. |
 | `Row` / `Cell` | `.onDisplay(...)`, `.willDisplay(...)` | row 표시 시작 이벤트를 받습니다. |
 | `Row` | `.onEndDisplay(...)` | row 표시 종료 이벤트를 받습니다. |
-| `List` | `.pullToRefresh(style:_:)` | 새로고침 문구, 색상, 폰트, 인디케이터 타입을 설정하고 sync/async 핸들러를 실행합니다. |
+| `List` | `.pullToRefresh(style:_:)` | 새로고침 문구, 색상, 폰트, 인디케이터 타입을 설정하고 async 핸들러를 실행합니다. |
 | `List` | `.onReachEnd(offsetFromEnd:_:)` | collection view 끝 근처 도달 이벤트를 받습니다. |
 
 ## 추후 작업
@@ -312,7 +312,7 @@ adapter.apply(list, updateStrategy: .nonAnimated) {
 
 - `system(title:titleColor:titleFont:tintColor:)`으로 시스템 `UIRefreshControl`의 안내 문구와 인디케이터 색을 조절할 수 있습니다.
 - `custom` 스타일로 새로고침 문구, 색상, 폰트, 인디케이터 타입을 바꿀 수 있습니다.
-- 핸들러는 sync, async 둘 다 받을 수 있습니다.
+- 핸들러는 async 블록만 받을 수 있습니다.
 - 새로고침이 끝나면 인디케이터는 자동으로 종료됩니다.
 - `custom`의 `image` 인디케이터는 `rotatesWhileRefreshing`와 `rotationDuration`으로 새로고침 중 회전 여부와 속도를 조절할 수 있습니다.
 
@@ -338,11 +338,11 @@ let list = List {
     )
   ))
 ) {
-  reloadFeed()
+  await reloadFeed()
 }
 ```
 
-sync 블록은 그대로 실행되고, async 블록은 `await`가 끝나는 시점에 refresh 상태가 자동으로 종료됩니다.
+새로고침 작업은 async 블록으로 전달하고, `await`가 끝나는 시점에 refresh 상태가 자동으로 종료됩니다.
 
 ### 4. Section layout 지정하기
 

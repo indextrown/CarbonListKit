@@ -127,11 +127,9 @@ final class PullToRefreshCustomController {
     )
 
     refreshTask?.cancel()
-    refreshTask = Task { [weak self] in
+    refreshTask = Task { @MainActor [weak self] in
       await event.handler()
-      await MainActor.run {
-        self?.endRefreshing()
-      }
+      self?.endRefreshing()
     }
   }
 
@@ -206,14 +204,10 @@ final class PullToRefreshCustomController {
 }
 
 private final class PullToRefreshControlView: UIView {
-  private let contentView = UIView()
   private let titleLabel = UILabel()
   private let indicatorContainerView = UIView()
   private var indicatorKind: IndicatorKind?
-  private var indicatorWidthConstraint: NSLayoutConstraint?
-  private var indicatorHeightConstraint: NSLayoutConstraint?
-  private var containerWidthConstraint: NSLayoutConstraint?
-  private var containerHeightConstraint: NSLayoutConstraint?
+  private var indicatorSize: CGSize = .zero
 
   private(set) var preferredHeight: CGFloat = 64
   private(set) var triggerHeight: CGFloat = 64
@@ -233,15 +227,14 @@ private final class PullToRefreshControlView: UIView {
     titleLabel.textColor = style.titleColor
     titleLabel.font = style.titleFont
     applyIndicator(style.indicator)
-    contentView.alpha = 0
+    alpha = 0
     setNeedsLayout()
-    layoutIfNeeded()
     recalculateSizing()
   }
 
   func setProgress(_ progress: CGFloat) {
     let clamped = max(0, min(1, progress))
-    contentView.alpha = clamped
+    alpha = clamped
     if clamped > 0 {
       indicatorKind?.stopAnimating()
     }
@@ -249,52 +242,28 @@ private final class PullToRefreshControlView: UIView {
 
   func setRefreshing(_ isRefreshing: Bool) {
     if isRefreshing {
-      contentView.alpha = 1
+      alpha = 1
       indicatorKind?.startAnimating()
     } else {
       indicatorKind?.stopAnimating()
     }
   }
 
-  override func layoutSubviews() {
-    super.layoutSubviews()
-    recalculateSizing()
-  }
-
   private func setup() {
     backgroundColor = .clear
     isOpaque = false
 
-    contentView.backgroundColor = .clear
-    contentView.translatesAutoresizingMaskIntoConstraints = false
-
-    let stackView = UIStackView(arrangedSubviews: [titleLabel, indicatorContainerView])
-    stackView.axis = .vertical
-    stackView.alignment = .center
-    stackView.spacing = 8
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-
+    titleLabel.backgroundColor = .clear
     titleLabel.numberOfLines = 1
     titleLabel.lineBreakMode = .byTruncatingTail
     titleLabel.textAlignment = .center
+    titleLabel.translatesAutoresizingMaskIntoConstraints = true
 
-    indicatorContainerView.translatesAutoresizingMaskIntoConstraints = false
+    indicatorContainerView.backgroundColor = .clear
+    indicatorContainerView.translatesAutoresizingMaskIntoConstraints = true
 
-    addSubview(contentView)
-    contentView.addSubview(stackView)
-
-    NSLayoutConstraint.activate([
-      contentView.topAnchor.constraint(equalTo: topAnchor),
-      contentView.leadingAnchor.constraint(equalTo: leadingAnchor),
-      contentView.trailingAnchor.constraint(equalTo: trailingAnchor),
-      contentView.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-      stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-      stackView.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: 16),
-      stackView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-      stackView.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -16),
-      stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
-    ])
+    addSubview(titleLabel)
+    addSubview(indicatorContainerView)
 
     recalculateSizing()
   }
@@ -328,44 +297,65 @@ private final class PullToRefreshControlView: UIView {
     indicatorKind?.view.removeFromSuperview()
     indicatorContainerView.subviews.forEach { $0.removeFromSuperview() }
 
-    NSLayoutConstraint.deactivate([
-      indicatorWidthConstraint,
-      indicatorHeightConstraint,
-      containerWidthConstraint,
-      containerHeightConstraint
-    ].compactMap { $0 })
-
-    view.translatesAutoresizingMaskIntoConstraints = false
+    indicatorSize = size
+    view.translatesAutoresizingMaskIntoConstraints = true
     indicatorContainerView.addSubview(view)
-
-    indicatorWidthConstraint = view.widthAnchor.constraint(equalToConstant: size.width)
-    indicatorHeightConstraint = view.heightAnchor.constraint(equalToConstant: size.height)
-    containerWidthConstraint = indicatorContainerView.widthAnchor.constraint(equalToConstant: size.width)
-    containerHeightConstraint = indicatorContainerView.heightAnchor.constraint(equalToConstant: size.height)
-
-    NSLayoutConstraint.activate([
-      view.centerXAnchor.constraint(equalTo: indicatorContainerView.centerXAnchor),
-      view.centerYAnchor.constraint(equalTo: indicatorContainerView.centerYAnchor),
-      indicatorWidthConstraint!,
-      indicatorHeightConstraint!,
-      containerWidthConstraint!,
-      containerHeightConstraint!
-    ])
-
-    indicatorContainerView.layoutIfNeeded()
+    setNeedsLayout()
   }
 
   private func recalculateSizing() {
-    let targetSize = CGSize(width: bounds.width, height: UIView.layoutFittingCompressedSize.height)
-    let fittingSize = systemLayoutSizeFitting(
-      targetSize,
-      withHorizontalFittingPriority: .required,
-      verticalFittingPriority: .fittingSizeLevel
+    let availableWidth = max(0, bounds.width - 32)
+    let titleSize = titleLabel.sizeThatFits(
+      CGSize(width: availableWidth, height: CGFloat.greatestFiniteMagnitude)
     )
-
-    let height = max(64, fittingSize.height)
+    let titleHeight = ceil(titleSize.height)
+    let indicatorHeight = ceil(indicatorSize.height)
+    let contentHeight = 12 + titleHeight + (titleHeight > 0 && indicatorHeight > 0 ? 8 : 0) + indicatorHeight + 12
+    let height = max(64, contentHeight)
     preferredHeight = height
     triggerHeight = height
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+
+    recalculateSizing()
+
+    let horizontalPadding: CGFloat = 16
+    let topPadding: CGFloat = 12
+    let spacing: CGFloat = 8
+    let bottomPadding: CGFloat = 12
+    let availableWidth = max(0, bounds.width - horizontalPadding * 2)
+
+    let titleSize = titleLabel.sizeThatFits(
+      CGSize(width: availableWidth, height: CGFloat.greatestFiniteMagnitude)
+    )
+    let titleWidth = min(availableWidth, ceil(titleSize.width))
+    let titleHeight = ceil(titleSize.height)
+    let titleX = floor((bounds.width - titleWidth) / 2)
+    titleLabel.frame = CGRect(x: titleX, y: topPadding, width: titleWidth, height: titleHeight)
+
+    let indicatorWidth = ceil(indicatorSize.width)
+    let indicatorHeight = ceil(indicatorSize.height)
+    let indicatorX = floor((bounds.width - indicatorWidth) / 2)
+    let indicatorY = titleLabel.frame.maxY + (titleHeight > 0 && indicatorHeight > 0 ? spacing : 0)
+    indicatorContainerView.frame = CGRect(
+      x: indicatorX,
+      y: indicatorY,
+      width: indicatorWidth,
+      height: indicatorHeight
+    )
+
+    indicatorKind?.view.frame = CGRect(
+      x: floor((indicatorContainerView.bounds.width - indicatorWidth) / 2),
+      y: floor((indicatorContainerView.bounds.height - indicatorHeight) / 2),
+      width: indicatorWidth,
+      height: indicatorHeight
+    )
+
+    let requiredHeight = topPadding + titleHeight + (titleHeight > 0 && indicatorHeight > 0 ? spacing : 0) + indicatorHeight + bottomPadding
+    preferredHeight = max(64, ceil(requiredHeight))
+    triggerHeight = preferredHeight
   }
 }
 

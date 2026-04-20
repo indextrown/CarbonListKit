@@ -51,11 +51,9 @@ final class PullToRefreshSystemController {
 
     isRefreshing = true
     refreshTask?.cancel()
-    refreshTask = Task { [weak self] in
+    refreshTask = Task { @MainActor [weak self] in
       await handler()
-      await MainActor.run {
-        self?.endRefreshing()
-      }
+      self?.endRefreshing()
     }
   }
 

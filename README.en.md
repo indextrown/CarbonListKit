@@ -19,7 +19,7 @@ It removes repeated collection view boilerplate from view controllers:
 
 The current implementation covers the core list adapter, SwiftUI bridge, SwiftUI component bridge, supplementary header/footer support, prefetching, orthogonal sections, pull-to-refresh, and the example app. DocC documentation is planned next.
 
-Pull-to-refresh handlers support both sync and async closures.
+Pull-to-refresh handlers support async closures.
 
 ## Requirements
 
@@ -103,7 +103,7 @@ final class FeedViewController: UIViewController {
 
 `CarbonList` wraps the existing `ListAdapter` for SwiftUI. Rendering, diff updates, and layout are still handled by the UIKit adapter.
 
-Pull-to-refresh handlers support both sync and async closures, and the refresh indicator ends automatically when the work finishes.
+Pull-to-refresh handlers support async closures, and the refresh indicator ends automatically when the work finishes.
 
 ```swift
 import CarbonListKit
@@ -211,7 +211,7 @@ adapter.apply {
 
 - `system(title:titleColor:titleFont:tintColor:)` lets you customize the `UIRefreshControl` title and indicator tint color.
 - `custom` lets you customize the refresh label, label color, label font, and indicator type.
-- Handlers support both sync and async closures.
+- Handlers support async closures.
 - The refresh indicator ends automatically when the work completes.
 - The `custom` image indicator supports `rotatesWhileRefreshing` and `rotationDuration` so you can control whether it spins and how fast it spins.
 
@@ -237,11 +237,11 @@ let list = List {
     )
   ))
 ) {
-  reloadFeed()
+  await reloadFeed()
 }
 ```
 
-Sync closures run directly, and async closures end the refresh state automatically when their `await` completes.
+Async closures end the refresh state automatically when their `await` completes.
 
 ### Section
 
@@ -868,7 +868,7 @@ Implemented:
 | `Row` / `Cell` | `.onSelect(...)`, `.didSelect(...)` | Receives row selection events. |
 | `Row` / `Cell` | `.onDisplay(...)`, `.willDisplay(...)` | Receives row display-start events. |
 | `Row` | `.onEndDisplay(...)` | Receives row display-end events. |
-| `List` | `.pullToRefresh(style:_:)` | Configures pull-to-refresh label, colors, font, indicator type, and sync/async handler. |
+| `List` | `.pullToRefresh(style:_:)` | Configures pull-to-refresh label, colors, font, indicator type, and async handler. |
 | `List` | `.onReachEnd(offsetFromEnd:_:)` | Receives collection view reach-end events. |
 
 Planned:

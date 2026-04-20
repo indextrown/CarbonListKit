@@ -61,46 +61,50 @@ class PullToRefreshDemoViewController: UIViewController {
   }
 
   private func render() {
-    adapter.apply(
-      List {
-        Section(id: "status") {
-          Row(
-            id: "status-row",
-            component: PullToRefreshStatusComponent(
-              content: .init(
-                title: configuration.introTitle,
-                subtitle: configuration.introSubtitle,
-                badgeTitle: configuration.badgeTitle,
-                badgeTintColor: configuration.badgeTintColor,
-                refreshCount: refreshCount,
-                isRefreshing: isRefreshing
-              )
+    adapter.apply(makeRefreshList(), updateStrategy: .animated)
+  }
+
+  private func makeList() -> List {
+    List {
+      Section(id: "status") {
+        Row(
+          id: "status-row",
+          component: PullToRefreshStatusComponent(
+            content: .init(
+              title: configuration.introTitle,
+              subtitle: configuration.introSubtitle,
+              badgeTitle: configuration.badgeTitle,
+              badgeTintColor: configuration.badgeTintColor,
+              refreshCount: refreshCount,
+              isRefreshing: isRefreshing
             )
           )
-        }
-        .layout(.vertical(spacing: 10))
-        .contentInsets(.init(top: 16, leading: 0, bottom: 12, trailing: 0))
-
-        Section(id: "items") {
-          for item in items {
-            Row(
-              id: item.id,
-              component: RefreshItemComponent(content: .init(item: item))
-            )
-          }
-        }
-        .layout(.vertical(spacing: 10))
-        .contentInsets(.init(top: 0, leading: 0, bottom: 16, trailing: 0))
+        )
       }
-      .pullToRefresh(style: configuration.pullToRefreshStyle) { [weak self] in
-        guard let self else {
-          return
-        }
+      .layout(.vertical(spacing: 10))
+      .contentInsets(.init(top: 16, leading: 0, bottom: 12, trailing: 0))
 
-        await self.reloadItems()
-      },
-      updateStrategy: .animated
-    )
+      Section(id: "items") {
+        for item in items {
+          Row(
+            id: item.id,
+            component: RefreshItemComponent(content: .init(item: item))
+          )
+        }
+      }
+      .layout(.vertical(spacing: 10))
+      .contentInsets(.init(top: 0, leading: 0, bottom: 16, trailing: 0))
+    }
+  }
+
+  private func makeRefreshList() -> List {
+    makeList().pullToRefresh(style: configuration.pullToRefreshStyle) { [weak self] in
+      guard let self else {
+        return
+      }
+
+      await self.reloadItems()
+    }
   }
 
   @MainActor
@@ -113,7 +117,14 @@ class PullToRefreshDemoViewController: UIViewController {
     render()
 
     try? await Task.sleep(nanoseconds: Const.refreshDelay)
+    mutateItems()
 
+    isRefreshing = false
+    render()
+  }
+
+  @MainActor
+  private func mutateItems() {
     refreshCount += 1
     items.shuffle()
 
@@ -132,9 +143,6 @@ class PullToRefreshDemoViewController: UIViewController {
     if items.count > Const.maxItems {
       items.removeLast(items.count - Const.maxItems)
     }
-
-    isRefreshing = false
-    render()
   }
 }
 
@@ -166,7 +174,7 @@ private extension PullToRefreshDemoConfiguration {
   static let system = Self(
     title: "Pull To Refresh",
     introTitle: "시스템 UIRefreshControl 예제",
-    introSubtitle: "기본 새로고침 컨트롤을 그대로 사용하면서도, title은 `attributedTitle`로 넣을 수 있습니다.",
+    introSubtitle: "기본 새로고침 컨트롤을 그대로 사용하면서, 비동기 작업이 끝날 때 자동으로 종료됩니다.",
     badgeTitle: "System",
     badgeTintColor: .systemBlue,
     pullToRefreshStyle: .system(.init(
