@@ -30,6 +30,7 @@ public final class ListAdapter: NSObject {
 
   private(set) var prefetchingRowIDOperations = [AnyHashable: [AnyCancellable]]()
   private let prefetchingPlugins: [CollectionViewPrefetchingPlugin]
+  private let pullToRefreshController = PullToRefreshController()
 
   /// ListAdapter를 초기화합니다.
   /// - Parameters:
@@ -85,6 +86,10 @@ public final class ListAdapter: NSObject {
     registerComponents(in: list)
     pruneSizeCache(for: list)
     prunePrefetchingOperations(for: list)
+    pullToRefreshController.update(
+      event: list.events.onPullToRefresh,
+      collectionView: collectionView
+    )
 
     let finishUpdate: () -> Void = { [weak self] in
       guard let self else {
@@ -935,7 +940,15 @@ extension ListAdapter: UICollectionViewDelegate {
   }
 
   public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    pullToRefreshController.scrollViewDidScroll(scrollView)
     triggerReachEndIfNeeded(contentOffset: scrollView.contentOffset)
+  }
+
+  public func scrollViewDidEndDragging(
+    _ scrollView: UIScrollView,
+    willDecelerate decelerate: Bool
+  ) {
+    pullToRefreshController.scrollViewDidEndDragging(scrollView, willDecelerate: decelerate)
   }
 
   public func scrollViewWillEndDragging(

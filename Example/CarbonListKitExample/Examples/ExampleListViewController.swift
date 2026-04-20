@@ -82,11 +82,71 @@ final class ExampleListViewController: UIViewController {
         }
 
         Row(
+          id: "pull-to-refresh-system",
+          component: ExampleMenuComponent(
+            content: .init(
+              title: "Pull To Refresh",
+              subtitle: "System UIRefreshControl based refresh.",
+              badge: "System",
+              tintColor: .systemBlue
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(PullToRefreshExampleViewController(), animated: true)
+        }
+
+        Row(
+          id: "pull-to-refresh-activity",
+          component: ExampleMenuComponent(
+            content: .init(
+              title: "Pull To Refresh Activity",
+              subtitle: "Custom title, color, font, and activity indicator.",
+              badge: "Activity",
+              tintColor: .systemGreen
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(PullToRefreshCustomActivityIndicatorExampleViewController(), animated: true)
+        }
+
+        Row(
+          id: "pull-to-refresh-image",
+          component: ExampleMenuComponent(
+            content: .init(
+              title: "Pull To Refresh Image",
+              subtitle: "Use an SF Symbol as the refresh indicator.",
+              badge: "Image",
+              tintColor: .systemOrange
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(PullToRefreshCustomImageIndicatorExampleViewController(), animated: true)
+        }
+
+        Row(
+          id: "pull-to-refresh-custom-view",
+          component: ExampleMenuComponent(
+            content: .init(
+              title: "Pull To Refresh View",
+              subtitle: "Provide a fully custom UIView as the indicator.",
+              badge: "View",
+              tintColor: .systemPurple
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(PullToRefreshCustomViewIndicatorExampleViewController(), animated: true)
+        }
+
+        Row(
           id: "prefetch",
           component: ExampleMenuComponent(
             content: .init(
-              title: "Prefetch",
-              subtitle: "Prefetch images before they appear on screen.",
+              title: "Prefetch + Kingfisher",
+              subtitle: "Prefetch images before they appear on screen and reuse Kingfisher cache.",
               badge: "Performance",
               tintColor: .systemPurple
             )

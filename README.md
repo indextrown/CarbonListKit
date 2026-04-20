@@ -5,7 +5,7 @@
 
 CarbonListKit은 선언형 `List`, `Section`, `Row`, `Component`로 `UICollectionView` 화면을 구성하는 UIKit 리스트 어댑터입니다.
 
-반복되는 cell 등록, data source/delegate 연결, diff update, compositional layout 구성, selection/display 이벤트 처리를 ViewController 밖으로 밀어내고, 화면은 “현재 보여줄 목록 상태”만 선언하도록 돕습니다.
+반복되는 cell 등록, data source/delegate 연결, diff update, compositional layout 구성, selection/display 이벤트 처리를 ViewController 밖으로 밀어내고, 화면은 “현재 보여줄 목록 상태”만 선언하도록 돕습니다. pull-to-refresh와 무한 스크롤도 `List` 레벨 modifier로 다룰 수 있습니다.
 
 ## 요구사항
 
@@ -224,6 +224,7 @@ struct SampleComponent: SwiftUIComponent {
 | apply completion | list 적용이 끝난 뒤 후처리를 실행합니다. | `completion` |
 | update queue | 업데이트 중 다시 `apply`하면 마지막 요청을 보관했다가 이어서 적용합니다. | last-write-wins |
 | snapshot 조회 | 현재 적용된 list 상태를 가져옵니다. | `adapter.snapshot()` |
+| pull-to-refresh | 새로고침 문구, 색상, 폰트, 인디케이터 타입을 지정하고 sync/async 새로고침 핸들러를 실행합니다. | `List.pullToRefresh(style:_:)` |
 | vertical layout | 세로 리스트 section을 만듭니다. | `.layout(.vertical(spacing:))` |
 | grid layout | 지정한 열 수의 grid section을 만듭니다. | `.layout(.grid(columns:itemSpacing:lineSpacing:))` |
 | custom layout | 직접 만든 `NSCollectionLayoutSection`을 section에 적용합니다. | `.layout(.custom { context in ... })` |
@@ -255,13 +256,13 @@ struct SampleComponent: SwiftUIComponent {
 | `Row` / `Cell` | `.onSelect(...)`, `.didSelect(...)` | row 선택 이벤트를 받습니다. |
 | `Row` / `Cell` | `.onDisplay(...)`, `.willDisplay(...)` | row 표시 시작 이벤트를 받습니다. |
 | `Row` | `.onEndDisplay(...)` | row 표시 종료 이벤트를 받습니다. |
+| `List` | `.pullToRefresh(style:_:)` | 새로고침 문구, 색상, 폰트, 인디케이터 타입을 설정하고 sync/async 핸들러를 실행합니다. |
 | `List` | `.onReachEnd(offsetFromEnd:_:)` | collection view 끝 근처 도달 이벤트를 받습니다. |
 
-## 아직 제공하지 않는 기능
+## 추후 작업
 
 | 기능 | 상태 |
 | --- | --- |
-| refresh control wrapper | 예정 |
 | DocC 문서 | 예정 |
 
 ## 사용법
@@ -305,7 +306,45 @@ adapter.apply(list, updateStrategy: .nonAnimated) {
 }
 ```
 
-### 3. Section layout 지정하기
+### 3. Pull To Refresh
+
+`List` 레벨 modifier로 pull-to-refresh를 설정할 수 있습니다.
+
+- `system(title:titleColor:titleFont:tintColor:)`으로 시스템 `UIRefreshControl`의 안내 문구와 인디케이터 색을 조절할 수 있습니다.
+- `custom` 스타일로 새로고침 문구, 색상, 폰트, 인디케이터 타입을 바꿀 수 있습니다.
+- 핸들러는 sync, async 둘 다 받을 수 있습니다.
+- 새로고침이 끝나면 인디케이터는 자동으로 종료됩니다.
+- `custom`의 `image` 인디케이터는 `rotatesWhileRefreshing`와 `rotationDuration`으로 새로고침 중 회전 여부와 속도를 조절할 수 있습니다.
+
+```swift
+let list = List {
+  Section(id: "feed") {
+    Row(id: "row-1", component: FeedRowComponent(content: .init(title: "첫 번째")))
+    Row(id: "row-2", component: FeedRowComponent(content: .init(title: "두 번째")))
+  }
+}
+.pullToRefresh(
+  style: .custom(.init(
+    title: "새로고침",
+    titleColor: .secondaryLabel,
+    titleFont: .systemFont(ofSize: 14, weight: .medium),
+    indicator: .image(
+      image: UIImage(systemName: "arrow.clockwise")!,
+      tintColor: .systemBlue,
+      contentMode: .scaleAspectFit,
+      size: .init(width: 22, height: 22),
+      rotatesWhileRefreshing: true,
+      rotationDuration: 0.8
+    )
+  ))
+) {
+  reloadFeed()
+}
+```
+
+sync 블록은 그대로 실행되고, async 블록은 `await`가 끝나는 시점에 refresh 상태가 자동으로 종료됩니다.
+
+### 4. Section layout 지정하기
 
 세로 목록:
 

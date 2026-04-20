@@ -36,6 +36,34 @@ public struct List: Equatable {
     return copy
   }
 
+  /// 아래로 당겨 새로고침 동작을 설정합니다.
+  /// - Parameters:
+  ///   - style: 새로고침 표시 스타일
+  ///   - handler: 새로고침 트리거 시 호출할 동기 작업
+  /// - Returns: 새로고침 이벤트가 설정된 새로운 List
+  public func pullToRefresh(
+    style: PullToRefreshStyle = .system(),
+    _ handler: @escaping @Sendable () -> Void
+  ) -> Self {
+    pullToRefresh(style: style) {
+      handler()
+    }
+  }
+
+  /// 아래로 당겨 새로고침 동작을 설정합니다.
+  /// - Parameters:
+  ///   - style: 새로고침 표시 스타일
+  ///   - handler: 새로고침 트리거 시 호출할 비동기 작업
+  /// - Returns: 새로고침 이벤트가 설정된 새로운 List
+  public func pullToRefresh(
+    style: PullToRefreshStyle = .system(),
+    _ handler: @escaping @Sendable () async -> Void
+  ) -> Self {
+    var copy = self
+    copy.events.onPullToRefresh = .init(style: style, handler: handler)
+    return copy
+  }
+
   /// 두 List가 같은지 비교합니다.
   /// 섹션들이 같은지 비교합니다.
   public static func == (lhs: List, rhs: List) -> Bool {
@@ -65,6 +93,7 @@ public struct ReachEndContext {
 
 struct ListEvents {
   var onReachEnd: ReachEndEvent?
+  var onPullToRefresh: PullToRefreshEvent?
 }
 
 struct ReachEndEvent {

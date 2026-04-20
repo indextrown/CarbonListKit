@@ -64,7 +64,14 @@ final class OrthogonalSectionExampleViewController: UIViewController {
           )
         }
       }
-      .layout(.orthogonal(itemSpacing: 20, lineSpacing: 12, scrollingBehavior: .continuous, reservedHeight: 100))
+      .layout(
+        .orthogonal(
+          itemSpacing: 20,
+          lineSpacing: 12,
+          scrollingBehavior: .groupPaging,
+          reservedHeight: 100
+        )
+      )
       .contentInsets(.init(top: 0, leading: 16, bottom: 12, trailing: 16))
 
       Section(id: "footer") {

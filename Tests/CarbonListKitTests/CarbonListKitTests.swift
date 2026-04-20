@@ -319,6 +319,104 @@ struct EventsAndConfigurationTests {
     #expect(list.events.onReachEnd?.handler != nil)
   }
 
+  @Test("List pullToRefresh modifier는 스타일과 핸들러를 저장한다")
+  func listPullToRefreshSyncModifierStoresStyleAndHandler() {
+    let list = List {
+      makeSection()
+    }.pullToRefresh(style: .system(.init(title: "당겨서 새로고침"))) { }
+
+    switch list.events.onPullToRefresh?.style {
+    case .system(let style):
+      #expect(style.title == "당겨서 새로고침")
+      #expect(style.titleColor == .secondaryLabel)
+      #expect(style.titleFont.fontName == UIFont.systemFont(ofSize: 12, weight: .regular).fontName)
+      #expect(style.titleFont.pointSize == UIFont.systemFont(ofSize: 12, weight: .regular).pointSize)
+      #expect(style.tintColor == nil)
+    case .custom:
+      Issue.record("system style가 저장되어야 합니다.")
+    case nil:
+      Issue.record("pullToRefresh 이벤트가 저장되어야 합니다.")
+    }
+
+    let tintedList = List {
+      makeSection()
+    }.pullToRefresh(style: .system(.init(tintColor: .systemRed))) { }
+
+    switch tintedList.events.onPullToRefresh?.style {
+    case .system(let style):
+      #expect(style.tintColor == .systemRed)
+    case .custom:
+      Issue.record("system style가 저장되어야 합니다.")
+    case nil:
+      Issue.record("pullToRefresh 이벤트가 저장되어야 합니다.")
+    }
+
+    #expect(list.events.onPullToRefresh?.handler != nil)
+  }
+
+  @Test("List pullToRefresh async modifier는 비동기 핸들러를 저장한다")
+  func listPullToRefreshAsyncModifierStoresHandler() async {
+    let list = List {
+      makeSection()
+    }.pullToRefresh(style: .custom(.init(title: "당겨서 새로고침"))) {
+      await Task.yield()
+    }
+
+    switch list.events.onPullToRefresh?.style {
+    case .system:
+      Issue.record("custom style가 저장되어야 합니다.")
+    case .custom(let style):
+      #expect(style.title == "당겨서 새로고침")
+    case nil:
+      Issue.record("pullToRefresh 이벤트가 저장되어야 합니다.")
+    }
+
+    #expect(list.events.onPullToRefresh?.handler != nil)
+  }
+
+  @Test("List pullToRefresh custom modifier는 스타일과 핸들러를 저장한다")
+  func listPullToRefreshCustomModifierStoresStyleAndHandler() {
+    let list = List {
+      makeSection()
+    }.pullToRefresh(style: .custom(.init(
+      title: "당겨서 새로고침",
+      titleColor: .systemRed,
+      titleFont: .systemFont(ofSize: 13, weight: .semibold),
+      indicator: .image(
+        image: UIImage(systemName: "arrow.clockwise")!,
+        tintColor: .systemGreen,
+        contentMode: .scaleAspectFit,
+        size: .init(width: 24, height: 24)
+      )
+    ))) { }
+
+    switch list.events.onPullToRefresh?.style {
+    case .system:
+      Issue.record("custom style가 저장되어야 합니다.")
+    case .custom(let style):
+      #expect(style.title == "당겨서 새로고침")
+      #expect(style.titleColor == .systemRed)
+      #expect(style.titleFont.fontName == UIFont.systemFont(ofSize: 13, weight: .semibold).fontName)
+      #expect(style.titleFont.pointSize == UIFont.systemFont(ofSize: 13, weight: .semibold).pointSize)
+      switch style.indicator {
+      case .activity(_, _, _):
+        Issue.record("image indicator가 저장되어야 합니다.")
+      case .image(_, let tintColor, let contentMode, let size, let rotatesWhileRefreshing, let rotationDuration):
+        #expect(tintColor == .systemGreen)
+        #expect(contentMode == .scaleAspectFit)
+        #expect(size == .init(width: 24, height: 24))
+        #expect(rotatesWhileRefreshing == false)
+        #expect(rotationDuration == 0.8)
+      case .custom(_, _):
+        Issue.record("image indicator가 저장되어야 합니다.")
+      }
+    case nil:
+      Issue.record("pullToRefresh 이벤트가 저장되어야 합니다.")
+    }
+
+    #expect(list.events.onPullToRefresh?.handler != nil)
+  }
+
   @Test("ListAdapterConfiguration 기본값은 성능 옵션을 켠 상태다")
   func configurationDefaultValues() {
     let configuration = ListAdapterConfiguration.default

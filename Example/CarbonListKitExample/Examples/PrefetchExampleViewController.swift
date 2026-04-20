@@ -1,14 +1,19 @@
 import CarbonListKit
+import Kingfisher
 import UIKit
 
 final class PrefetchExampleViewController: UIViewController {
+  private enum Const {
+    static let pageSize = 24
+    static let maximumItemCount = 3200
+  }
+
   private let collectionView = UICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
   )
 
-  // 간단한 이미지 prefetcher 구현
-  private let imagePrefetcher = SimpleImagePrefetcher()
+  private let imagePrefetcher = KingfisherImagePrefetcher()
 
   private lazy var adapter = ListAdapter(
     collectionView: collectionView,
@@ -16,14 +21,21 @@ final class PrefetchExampleViewController: UIViewController {
   )
 
   private var images: [ImageItem] = []
+  private var isLoadingNextPage = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    title = "Prefetch"
+    title = "Prefetch + Kingfisher"
     view.backgroundColor = .systemBackground
+    navigationItem.rightBarButtonItem = UIBarButtonItem(
+      title: "Clear",
+      style: .plain,
+      target: self,
+      action: #selector(clearCacheTapped)
+    )
     setupCollectionView()
-    loadImages()
+    appendNextPage()
   }
 
   private func setupCollectionView() {
@@ -39,31 +51,89 @@ final class PrefetchExampleViewController: UIViewController {
     ])
   }
 
-  private func loadImages() {
-    // 샘플 이미지 데이터 생성
-    images = (1...1000).map { index in
+  private func appendNextPage() {
+    guard isLoadingNextPage == false,
+          images.count < Const.maximumItemCount else {
+      return
+    }
+
+    isLoadingNextPage = true
+
+    let nextStartIndex = images.count + 1
+    let nextEndIndex = min(images.count + Const.pageSize, Const.maximumItemCount)
+    let newImages = (nextStartIndex...nextEndIndex).map { index in
       ImageItem(
         id: "image_\(index)",
         imageURL: URL(string: "https://picsum.photos/seed/\(index)/300/200")!,
-        // imageURL: URL(string: "https://picsum.photos/300/200?random=\(index)")!,
         title: "이미지 \(index)"
       )
     }
-    render()
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+      guard let self else {
+        return
+      }
+
+      self.images.append(contentsOf: newImages)
+      self.isLoadingNextPage = false
+      self.render()
+    }
   }
 
   private func render() {
-    adapter.apply(updateStrategy: .animated) {
-      Section(id: "images") {
-        for image in images {
+    let canLoadMore = images.count < Const.maximumItemCount
+
+    adapter.apply(
+      List {
+        Section(id: "images") {
+          for image in images {
+            Row(
+              id: image.id,
+              component: KingfisherImageComponent(content: .init(image: image))
+            )
+          }
+        }
+        .layout(.grid(columns: 4, itemSpacing: 8, lineSpacing: 8))
+        .contentInsets(.init(top: 16, leading: 16, bottom: 16, trailing: 16))
+
+        Section(id: "footer") {
           Row(
-            id: image.id,
-            component: ImageComponent(content: .init(image: image, prefetcher: imagePrefetcher))
+            id: "footer",
+            component: FooterComponent(
+              content: .init(
+                title: canLoadMore ? "Loading next page..." : "No more items",
+                subtitle: "\(images.count) / \(Const.maximumItemCount) items"
+              )
+            )
           )
         }
+        .layout(.vertical(spacing: 0))
+        .contentInsets(.init(top: 0, leading: 16, bottom: 24, trailing: 16))
       }
-      .layout(.grid(columns: 4, itemSpacing: 8, lineSpacing: 8))
-      .contentInsets(.init(top: 16, leading: 16, bottom: 16, trailing: 16))
+      .onReachEnd(offsetFromEnd: .relativeToContainerSize(multiplier: 1.0)) { [weak self] _ in
+        self?.appendNextPage()
+      },
+      updateStrategy: .animated
+    )
+  }
+
+  @objc
+  private func clearCacheTapped() {
+    ImageCache.default.clearMemoryCache()
+    ImageCache.default.clearDiskCache { [weak self] in
+      DispatchQueue.main.async {
+        guard let self else {
+          return
+        }
+
+        let alert = UIAlertController(
+          title: "Done",
+          message: "Kingfisher memory and disk cache were cleared.",
+          preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        self.present(alert, animated: true)
+      }
     }
   }
 }
@@ -78,42 +148,39 @@ struct ImageItem: Identifiable, Equatable {
 
 // MARK: - Components
 
-struct ImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
+struct KingfisherImageComponent: ListComponent, ComponentRemoteImagePrefetchable {
   struct Content: Equatable {
     let imageURL: URL
     let title: String
-    // prefetcher는 Equatable 비교에서 제외
-    let prefetcher: SimpleImagePrefetcher?
 
-    init(image: ImageItem, prefetcher: SimpleImagePrefetcher? = nil) {
+    init(image: ImageItem) {
       self.imageURL = image.imageURL
       self.title = image.title
-      self.prefetcher = prefetcher
-    }
-
-    static func == (lhs: Content, rhs: Content) -> Bool {
-      lhs.imageURL == rhs.imageURL && lhs.title == rhs.title
     }
   }
 
   let content: Content
 
+  var height: ListComponentHeight {
+    return .square
+  }
+
   var remoteImageURLs: [URL] {
     [content.imageURL]
   }
 
-  func makeView(context: ListComponentContext<Void>) -> ImageCellView {
-    ImageCellView()
+  func makeView(context: ListComponentContext<Void>) -> KingfisherImageCellView {
+    KingfisherImageCellView()
   }
 
-  func updateView(_ view: ImageCellView, context: ListComponentContext<Void>) {
-    view.configure(title: content.title, imageURL: content.imageURL, prefetcher: content.prefetcher)
+  func updateView(_ view: KingfisherImageCellView, context: ListComponentContext<Void>) {
+    view.configure(title: content.title, imageURL: content.imageURL)
   }
 }
 
 // MARK: - Views
 
-final class ImageCellView: UIView {
+final class KingfisherImageCellView: UIView {
   private let imageView: UIImageView = {
     let imageView = UIImageView()
     imageView.contentMode = .scaleAspectFill
@@ -130,10 +197,6 @@ final class ImageCellView: UIView {
     label.numberOfLines = 1
     return label
   }()
-
-  private var currentImageURL: URL?
-  private var currentImageLoadID: UUID?
-  private var imageLoadTask: URLSessionDataTask?
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -160,7 +223,7 @@ final class ImageCellView: UIView {
       imageView.topAnchor.constraint(equalTo: topAnchor, constant: 8),
       imageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
       imageView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
-      imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
+      imageView.heightAnchor.constraint(equalToConstant: 40),
 
       titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
       titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
@@ -169,109 +232,114 @@ final class ImageCellView: UIView {
     ])
   }
 
-  func configure(title: String, imageURL: URL, prefetcher: SimpleImagePrefetcher?) {
-    // 이전 작업 취소 및 상태 초기화
-    imageLoadTask?.cancel()
-    imageLoadTask = nil
+  func configure(title: String, imageURL: URL) {
+    imageView.kf.cancelDownloadTask()
     imageView.image = nil
     imageView.backgroundColor = .systemGray4
-
     titleLabel.text = title
-    currentImageURL = imageURL
-    currentImageLoadID = UUID()
 
-    // 이미지 로딩 (실제 앱에서는 캐시를 사용)
-    loadImage(from: imageURL, prefetcher: prefetcher, loadID: currentImageLoadID!)
-  }
-
-  private func loadImage(from url: URL, prefetcher: SimpleImagePrefetcher?, loadID: UUID) {
-    // 간단한 이미지 로딩 구현
-    // 실제 앱에서는 SDWebImage, Kingfisher 등의 라이브러리 사용
-    imageView.backgroundColor = .systemGray4
-
-    // 먼저 prefetch 캐시에서 이미지 확인
-    if let prefetcher = prefetcher,
-       let cachedImage = prefetcher.cachedImage(for: url) {
-      // 로딩 ID와 URL이 모두 현재 것과 일치하는지 확인 (셀 재사용 체크)
-      guard currentImageLoadID == loadID && currentImageURL == url else {
-        print("❌ Prefetch cache hit but cell was reused: \(url.lastPathComponent)")
-        return
-      }
-      imageView.image = cachedImage
-      imageView.backgroundColor = .clear
-      print("🚀 Used prefetched image: \(url.lastPathComponent)")
-      return
-    }
-
-    // URLSession 작업 생성
-    let task = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-      // 로딩 ID와 URL이 모두 현재 것과 일치하는지 확인 (셀 재사용으로 인한 취소 체크)
-      guard let self = self, self.currentImageLoadID == loadID && self.currentImageURL == url else {
-        print("❌ Network load completed but cell was reused: \(url.lastPathComponent)")
-        return
-      }
-
-      guard let data = data,
-            let image = UIImage(data: data) else {
-        return
-      }
-
-      DispatchQueue.main.async {
-        // 최종적으로도 로딩 ID와 URL 확인
-        guard self.currentImageLoadID == loadID && self.currentImageURL == url else {
-          print("❌ Network load display but cell was reused: \(url.lastPathComponent)")
-          return
-        }
-        self.imageView.image = image
-        self.imageView.backgroundColor = .clear
-        print("📥 Loaded image: \(url.lastPathComponent)")
-      }
-    }
-
-    imageLoadTask = task
-    task.resume()
+    imageView.kf.setImage(
+      with: imageURL,
+      placeholder: nil,
+      options: [
+        .transition(.fade(0.2))
+      ]
+    )
   }
 }
 
-// MARK: - Image Prefetcher
+private struct FooterComponent: ListComponent {
+  struct Content: Equatable {
+    let title: String
+    let subtitle: String
+  }
 
-final class SimpleImagePrefetcher: RemoteImagePrefetching {
-  private var prefetchTasks: [UUID: URLSessionDataTask] = [:]
-  private var imageCache: [URL: UIImage] = [:]
+  let content: Content
+
+  func makeView(context: ListComponentContext<Void>) -> FooterView {
+    FooterView()
+  }
+
+  func updateView(_ view: FooterView, context: ListComponentContext<Void>) {
+    view.configure(title: content.title, subtitle: content.subtitle)
+  }
+}
+
+private final class FooterView: UIView {
+  private let containerView = UIView()
+  private let titleLabel = UILabel()
+  private let subtitleLabel = UILabel()
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    setup()
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  func configure(title: String, subtitle: String) {
+    titleLabel.text = title
+    subtitleLabel.text = subtitle
+  }
+
+  private func setup() {
+    backgroundColor = .clear
+
+    containerView.backgroundColor = .secondarySystemGroupedBackground
+    containerView.layer.cornerRadius = 10
+    containerView.translatesAutoresizingMaskIntoConstraints = false
+
+    titleLabel.font = .preferredFont(forTextStyle: .headline)
+    titleLabel.textColor = .label
+    titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+    subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
+    subtitleLabel.textColor = .secondaryLabel
+    subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+    addSubview(containerView)
+    containerView.addSubview(titleLabel)
+    containerView.addSubview(subtitleLabel)
+
+    NSLayoutConstraint.activate([
+      containerView.topAnchor.constraint(equalTo: topAnchor),
+      containerView.leadingAnchor.constraint(equalTo: leadingAnchor),
+      containerView.trailingAnchor.constraint(equalTo: trailingAnchor),
+      containerView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+      titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 16),
+      titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
+      titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+
+      subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+      subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+      subtitleLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+      subtitleLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -16)
+    ])
+  }
+}
+
+// MARK: - Kingfisher Prefetcher
+final class KingfisherImagePrefetcher: RemoteImagePrefetching {
+  private var prefetchers: [UUID: ImagePrefetcher] = [:]
 
   func prefetchImage(url: URL) -> UUID? {
-    // 이미 캐시에 있는 경우 스킵
-    if imageCache[url] != nil {
-      return nil
-    }
-
     let uuid = UUID()
-    let task = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-      guard let self = self,
-            let data = data,
-            let image = UIImage(data: data) else {
-        return
-      }
+    let prefetcher = ImagePrefetcher(urls: [url], completionHandler: { [weak self] _, _, _ in
+      self?.prefetchers.removeValue(forKey: uuid)
+    })
 
-      // 캐시에 저장
-      self.imageCache[url] = image
-      self.prefetchTasks[uuid] = nil
+    prefetchers[uuid] = prefetcher
+    prefetcher.start()
 
-      print("✅ Prefetched image: \(url.lastPathComponent)")
-    }
-
-    prefetchTasks[uuid] = task
-    task.resume()
     return uuid
   }
 
   func cancelTask(uuid: UUID) {
-    prefetchTasks[uuid]?.cancel()
-    prefetchTasks.removeValue(forKey: uuid)
-  }
-
-  // 캐시된 이미지 가져오기
-  func cachedImage(for url: URL) -> UIImage? {
-    return imageCache[url]
+    prefetchers[uuid]?.stop()
+    prefetchers.removeValue(forKey: uuid)
   }
 }

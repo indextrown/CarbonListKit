@@ -11,9 +11,11 @@
 		8A6F6B1C2D3E4F5000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000012 /* ContentView.swift */; };
 		8A6F6B1C2D3E4F5000000003 /* SampleListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000013 /* SampleListViewController.swift */; };
 		8A6F6B1C2D3E4F5000000004 /* CarbonListKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8A6F6B1C2D3E4F5000000031 /* CarbonListKit */; };
+		8A6F6B1C2D3E4F500000000C /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 8A6F6B1C2D3E4F5000000032 /* Kingfisher */; };
 		8A6F6B1C2D3E4F5000000005 /* ExampleListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000014 /* ExampleListViewController.swift */; };
 		8A6F6B1C2D3E4F5000000006 /* ArticleFeedExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */; };
 		8A6F6B1C2D3E4F5000000007 /* InfiniteScrollExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */; };
+		8A6F6B1C2D3E4F500000001B /* PullToRefreshExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F500000001C /* PullToRefreshExampleViewController.swift */; };
 			8A6F6B1C2D3E4F5000000008 /* KoreanCompleteExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */; };
 			8A6F6B1C2D3E4F5000000009 /* HeaderFooterExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */; };
 			8A6F6B1C2D3E4F500000000A /* HeaderFooterDSLExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */; };
@@ -32,6 +34,7 @@
 		8A6F6B1C2D3E4F5000000014 /* ExampleListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleListViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleFeedExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniteScrollExampleViewController.swift; sourceTree = "<group>"; };
+		8A6F6B1C2D3E4F500000001C /* PullToRefreshExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullToRefreshExampleViewController.swift; sourceTree = "<group>"; };
 		8A6F6B1C2D3E4F5000000017 /* KoreanCompleteExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanCompleteExampleViewController.swift; sourceTree = "<group>"; };
 			8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderFooterExampleViewController.swift; sourceTree = "<group>"; };
 			8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderFooterDSLExampleViewController.swift; sourceTree = "<group>"; };
@@ -48,6 +51,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8A6F6B1C2D3E4F5000000004 /* CarbonListKit in Frameworks */,
+				8A6F6B1C2D3E4F500000000C /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +93,7 @@
 				8A6F6B1C2D3E4F5000000013 /* SampleListViewController.swift */,
 				8A6F6B1C2D3E4F5000000015 /* ArticleFeedExampleViewController.swift */,
 				8A6F6B1C2D3E4F5000000016 /* InfiniteScrollExampleViewController.swift */,
+				8A6F6B1C2D3E4F500000001C /* PullToRefreshExampleViewController.swift */,
 					8A6F6B1C2D3E4F5000000018 /* HeaderFooterExampleViewController.swift */,
 					8A6F6B1C2D3E4F5000000019 /* HeaderFooterDSLExampleViewController.swift */,
 					8A6F6B1C2D3E4F500000001A /* OrthogonalSectionExampleViewController.swift */,
@@ -125,6 +130,7 @@
 			name = CarbonListKitExample;
 			packageProductDependencies = (
 				8A6F6B1C2D3E4F5000000031 /* CarbonListKit */,
+				8A6F6B1C2D3E4F5000000032 /* Kingfisher */,
 			);
 			productName = CarbonListKitExample;
 			productReference = 8A6F6B1C2D3E4F5000000010 /* CarbonListKitExample.app */;
@@ -156,6 +162,7 @@
 			mainGroup = 8A6F6B1C2D3E4F5000000040;
 			packageReferences = (
 				8A6F6B1C2D3E4F5000000030 /* XCLocalSwiftPackageReference "../" */,
+				8A6F6B1C2D3E4F5000000033 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			productRefGroup = 8A6F6B1C2D3E4F5000000042 /* Products */;
 			projectDirPath = "";
@@ -189,6 +196,7 @@
 				8A6F6B1C2D3E4F5000000003 /* SampleListViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000006 /* ArticleFeedExampleViewController.swift in Sources */,
 				8A6F6B1C2D3E4F5000000007 /* InfiniteScrollExampleViewController.swift in Sources */,
+				8A6F6B1C2D3E4F500000001B /* PullToRefreshExampleViewController.swift in Sources */,
 					8A6F6B1C2D3E4F5000000009 /* HeaderFooterExampleViewController.swift in Sources */,
 					8A6F6B1C2D3E4F500000000A /* HeaderFooterDSLExampleViewController.swift in Sources */,
 					8A6F6B1C2D3E4F500000000B /* OrthogonalSectionExampleViewController.swift in Sources */,
@@ -406,11 +414,27 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		8A6F6B1C2D3E4F5000000033 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		8A6F6B1C2D3E4F5000000031 /* CarbonListKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8A6F6B1C2D3E4F5000000030 /* XCLocalSwiftPackageReference "../" */;
 			productName = CarbonListKit;
+		};
+		8A6F6B1C2D3E4F5000000032 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8A6F6B1C2D3E4F5000000033 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
