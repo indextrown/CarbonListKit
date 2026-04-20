@@ -50,6 +50,30 @@ public struct List: Equatable {
     return copy
   }
 
+  /// 아래로 당겨 새로고침 동작을 설정합니다.
+  /// - Parameters:
+  ///   - style: 새로고침 표시 스타일
+  ///   - handler: 새로고침 트리거 시 호출할 completion 기반 작업
+  /// - Returns: 새로고침 이벤트가 설정된 새로운 List
+  public func pullToRefresh(
+    style: PullToRefreshStyle = .system(),
+    _ handler: @escaping @Sendable (@escaping @Sendable () -> Void) -> Void
+  ) -> Self {
+    var copy = self
+    copy.events.onPullToRefresh = .init(style: style) {
+      await withCheckedContinuation { continuation in
+        let once = CompletionOnce {
+          continuation.resume()
+        }
+
+        handler {
+          once.call()
+        }
+      }
+    }
+    return copy
+  }
+
   /// 두 List가 같은지 비교합니다.
   /// 섹션들이 같은지 비교합니다.
   public static func == (lhs: List, rhs: List) -> Bool {
@@ -85,5 +109,27 @@ struct ListEvents {
 struct ReachEndEvent {
   let offset: ReachEndOffset
   let handler: (ReachEndContext) -> Void
+}
+
+private final class CompletionOnce {
+  private let lock = NSLock()
+  private var didResume = false
+  private let action: () -> Void
+
+  init(_ action: @escaping () -> Void) {
+    self.action = action
+  }
+
+  func call() {
+    lock.lock()
+    defer { lock.unlock() }
+
+    guard didResume == false else {
+      return
+    }
+
+    didResume = true
+    action()
+  }
 }
 #endif

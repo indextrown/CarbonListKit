@@ -2,12 +2,18 @@ import CarbonListKit
 import UIKit
 
 struct PullToRefreshDemoConfiguration {
+  enum RefreshMode {
+    case async
+    case completion
+  }
+
   let title: String
   let introTitle: String
   let introSubtitle: String
   let badgeTitle: String
   let badgeTintColor: UIColor
   let pullToRefreshStyle: PullToRefreshStyle
+  let refreshMode: RefreshMode
 }
 
 class PullToRefreshDemoViewController: UIViewController {
@@ -98,12 +104,24 @@ class PullToRefreshDemoViewController: UIViewController {
   }
 
   private func makeRefreshList() -> List {
-    makeList().pullToRefresh(style: configuration.pullToRefreshStyle) { [weak self] in
-      guard let self else {
-        return
-      }
+    switch configuration.refreshMode {
+    case .async:
+      return makeList().pullToRefresh(style: configuration.pullToRefreshStyle) { [weak self] in
+        guard let self else {
+          return
+        }
 
-      await self.reloadItems()
+        await self.reloadItems()
+      }
+    case .completion:
+      return makeList().pullToRefresh(style: configuration.pullToRefreshStyle) { [weak self] completion in
+        guard let self else {
+          completion()
+          return
+        }
+
+        self.reloadItems(completion: completion)
+      }
     }
   }
 
@@ -121,6 +139,30 @@ class PullToRefreshDemoViewController: UIViewController {
 
     isRefreshing = false
     render()
+  }
+
+  @MainActor
+  private func reloadItems(completion: @escaping @Sendable () -> Void) {
+    guard isRefreshing == false else {
+      completion()
+      return
+    }
+
+    isRefreshing = true
+    render()
+
+    Task { @MainActor [weak self] in
+      guard let self else {
+        completion()
+        return
+      }
+
+      try? await Task.sleep(nanoseconds: Const.refreshDelay)
+      mutateItems()
+      isRefreshing = false
+      render()
+      completion()
+    }
   }
 
   @MainActor
@@ -170,6 +212,12 @@ final class PullToRefreshCustomViewIndicatorExampleViewController: PullToRefresh
   }
 }
 
+final class PullToRefreshLegacyCompletionExampleViewController: PullToRefreshDemoViewController {
+  init() {
+    super.init(configuration: .legacyCompletion)
+  }
+}
+
 private extension PullToRefreshDemoConfiguration {
   static let system = Self(
     title: "Pull To Refresh",
@@ -177,6 +225,7 @@ private extension PullToRefreshDemoConfiguration {
     introSubtitle: "기본 새로고침 컨트롤을 그대로 사용하면서, 비동기 작업이 끝날 때 자동으로 종료됩니다.",
     badgeTitle: "System",
     badgeTintColor: .systemBlue,
+    refreshMode: .async,
     pullToRefreshStyle: .system(.init(
       title: "시스템 새로고침",
       titleColor: .secondaryLabel,
@@ -191,6 +240,7 @@ private extension PullToRefreshDemoConfiguration {
     introSubtitle: "문구, 색상, 폰트와 activity indicator 크기를 함께 바꿀 수 있습니다.",
     badgeTitle: "Activity",
     badgeTintColor: .systemGreen,
+    refreshMode: .async,
     pullToRefreshStyle: .custom(.init(
       title: "아래로 당겨 새로고침",
       titleColor: .secondaryLabel,
@@ -209,6 +259,7 @@ private extension PullToRefreshDemoConfiguration {
     introSubtitle: "SF Symbol 이미지를 사용해 새로고침 아이콘을 바꾸고, refreshing 중에는 회전도 시킬 수 있습니다.",
     badgeTitle: "Image",
     badgeTintColor: .systemOrange,
+    refreshMode: .async,
     pullToRefreshStyle: .custom(.init(
       title: "새로고침",
       titleColor: .secondaryLabel,
@@ -230,6 +281,7 @@ private extension PullToRefreshDemoConfiguration {
     introSubtitle: "완전히 커스텀한 UIView를 인디케이터로 넣는 방식입니다.",
     badgeTitle: "Custom View",
     badgeTintColor: .systemPurple,
+    refreshMode: .async,
     pullToRefreshStyle: .custom(.init(
       title: "커스텀 뷰로 새로고침",
       titleColor: .secondaryLabel,
@@ -237,6 +289,28 @@ private extension PullToRefreshDemoConfiguration {
       indicator: .custom(
         size: .init(width: 96, height: 30),
         makeView: { PullToRefreshBadgeIndicatorView() }
+      )
+    ))
+  )
+
+  static let legacyCompletion = Self(
+    title: "Pull To Refresh",
+    introTitle: "completion 기반 새로고침 예제",
+    introSubtitle: "async/await 이전 스타일의 completion handler도 같은 pullToRefresh API로 받을 수 있습니다.",
+    badgeTitle: "Legacy",
+    badgeTintColor: .systemRed,
+    refreshMode: .completion,
+    pullToRefreshStyle: .custom(.init(
+      title: "레거시 새로고침",
+      titleColor: .secondaryLabel,
+      titleFont: .systemFont(ofSize: 14, weight: .medium),
+      indicator: .image(
+        image: UIImage(systemName: "arrow.clockwise")!,
+        tintColor: .systemRed,
+        contentMode: .scaleAspectFit,
+        size: .init(width: 22, height: 22),
+        rotatesWhileRefreshing: true,
+        rotationDuration: 0.8
       )
     ))
   )

@@ -127,6 +127,21 @@ final class ExampleListViewController: UIViewController {
         }
 
         Row(
+          id: "pull-to-refresh-legacy",
+          component: ExampleMenuComponent(
+            content: .init(
+              title: "Pull To Refresh Legacy",
+              subtitle: "Use the completion-based refresh handler overload.",
+              badge: "Legacy",
+              tintColor: .systemRed
+            )
+          )
+        )
+        .onSelect { [weak self] _ in
+          self?.navigationController?.pushViewController(PullToRefreshLegacyCompletionExampleViewController(), animated: true)
+        }
+
+        Row(
           id: "pull-to-refresh-custom-view",
           component: ExampleMenuComponent(
             content: .init(

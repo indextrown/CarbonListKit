@@ -374,6 +374,43 @@ struct EventsAndConfigurationTests {
     #expect(list.events.onPullToRefresh?.handler != nil)
   }
 
+  @Test("List pullToRefresh completion modifier는 completion 기반 핸들러를 async로 저장한다")
+  func listPullToRefreshCompletionModifierBridgesToAsyncHandler() async {
+    actor CompletionFlag {
+      var didResume = false
+
+      func markResumed() {
+        didResume = true
+      }
+
+      func value() -> Bool {
+        didResume
+      }
+    }
+
+    let flag = CompletionFlag()
+    let list = List {
+      makeSection()
+    }.pullToRefresh(style: .custom(.init(title: "당겨서 새로고침"))) { completion in
+      Task {
+        await flag.markResumed()
+        completion()
+      }
+    }
+
+    switch list.events.onPullToRefresh?.style {
+    case .system:
+      Issue.record("custom style가 저장되어야 합니다.")
+    case .custom(let style):
+      #expect(style.title == "당겨서 새로고침")
+    case nil:
+      Issue.record("pullToRefresh 이벤트가 저장되어야 합니다.")
+    }
+
+    await list.events.onPullToRefresh?.handler()
+    #expect(await flag.value())
+  }
+
   @Test("List pullToRefresh custom modifier는 스타일과 핸들러를 저장한다")
   func listPullToRefreshCustomModifierStoresStyleAndHandler() {
     let list = List {
