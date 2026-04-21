@@ -53,7 +53,8 @@ final class ComponentCell: UICollectionViewCell {
   override func preferredLayoutAttributesFitting(
     _ layoutAttributes: UICollectionViewLayoutAttributes
   ) -> UICollectionViewLayoutAttributes {
-    let attributes = super.preferredLayoutAttributesFitting(layoutAttributes)
+    let attributes = layoutAttributes.copy() as? UICollectionViewLayoutAttributes
+      ?? layoutAttributes
     let width = layoutAttributes.size.width
 
     switch renderedComponent?.height {

@@ -61,7 +61,8 @@ final class ComponentSupplementaryView: UICollectionReusableView {
   override func preferredLayoutAttributesFitting(
     _ layoutAttributes: UICollectionViewLayoutAttributes
   ) -> UICollectionViewLayoutAttributes {
-    let attributes = super.preferredLayoutAttributesFitting(layoutAttributes)
+    let attributes = layoutAttributes.copy() as? UICollectionViewLayoutAttributes
+      ?? layoutAttributes
     let width = layoutAttributes.size.width
 
     if let key = sizeCacheKey(width: width),
