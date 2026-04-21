@@ -17,8 +17,14 @@ public struct AnyListComponent: Equatable {
   }
 
   /// 컴포넌트 높이
+  @available(*, deprecated, message: "Use height(context:) instead.")
   public var height: ListComponentHeight {
-    box.height
+    box.height(context: .init(containerWidth: 0))
+  }
+
+  /// 컨테이너 너비를 반영한 컴포넌트 높이
+  public func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    box.height(context: context)
   }
 
   var content: AnyEquatableValue {
@@ -63,7 +69,7 @@ public struct AnyListComponent: Equatable {
   public static func == (lhs: AnyListComponent, rhs: AnyListComponent) -> Bool {
     lhs.componentTypeID == rhs.componentTypeID
       && lhs.content == rhs.content
-      && lhs.height == rhs.height
+      && lhs.height(context: .init(containerWidth: 0)) == rhs.height(context: .init(containerWidth: 0))
   }
 }
 
@@ -87,8 +93,9 @@ struct AnyEquatableValue: Equatable {
 private protocol AnyListComponentBox {
   var componentTypeID: ObjectIdentifier { get }
   var reuseIdentifier: String { get }
-  var height: ListComponentHeight { get }
   var content: AnyEquatableValue { get }
+
+  func height(context: ListComponentHeightContext) -> ListComponentHeight
 
   func makeCoordinator() -> Any
   func makeView(coordinator: Any, containerWidth: CGFloat) -> UIView
@@ -109,9 +116,8 @@ private struct ListComponentBox<Component: ListComponent>: AnyListComponentBox {
     component.reuseIdentifier
   }
 
-  /// 컴포넌트 높이
-  var height: ListComponentHeight {
-    component.height
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    component.height(context: context)
   }
 
   /// 컴포넌트 콘텐츠

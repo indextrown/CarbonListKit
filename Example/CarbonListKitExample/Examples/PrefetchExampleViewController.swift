@@ -161,8 +161,8 @@ struct KingfisherImageComponent: ListComponent, ComponentRemoteImagePrefetchable
 
   let content: Content
 
-  var height: ListComponentHeight {
-    return .square
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .square
   }
 
   var remoteImageURLs: [URL] {

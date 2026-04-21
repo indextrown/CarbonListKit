@@ -476,7 +476,7 @@ var reuseIdentifier: String {
 }
 ```
 
-If a row has a known height, implement `height` on the component. If you do not implement it, the default is `.automatic` and CarbonListKit keeps using Auto Layout self-sizing.
+If a row has a known height, implement `height(context:)` on the component. If you need the old static property for compatibility, `height` is deprecated. If you do not implement either, the default is `.automatic` and CarbonListKit keeps using Auto Layout self-sizing.
 
 ```swift
 struct FixedArticleComponent: ListComponent {
@@ -486,7 +486,7 @@ struct FixedArticleComponent: ListComponent {
 
   let content: Content
 
-  var height: ListComponentHeight {
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
     .absolute(72)
   }
 
@@ -503,6 +503,32 @@ struct FixedArticleComponent: ListComponent {
 When a component returns `.absolute`, `ComponentCell` skips `systemLayoutSizeFitting` and applies that height directly. Make sure the component view is designed for the fixed height, otherwise its content may be compressed.
 
 `.square` uses the cell's width as its height. It is handy for grids where the layout determines the width and you want a perfectly square item without calculating or passing width through your content.
+
+If you implement `height(context:)`, you can compute a more realistic height from the current container width.
+
+```swift
+struct FeedCardComponent: ListComponent {
+  struct Content: Equatable {
+    let title: String
+  }
+
+  let content: Content
+
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .absolute(max(120, context.containerWidth * 0.72))
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> FeedCardView {
+    FeedCardView()
+  }
+
+  func updateView(_ view: FeedCardView, context: ListComponentContext<Void>) {
+    view.configure(title: content.title)
+  }
+}
+```
+
+This pattern is especially useful for square-image or ratio-based cards where `automatic` may start too small on the first estimate pass.
 
 ## Entity vs Component Content
 

@@ -216,7 +216,7 @@ struct SampleComponent: SwiftUIComponent {
 | UIKit view component | 각 row는 일반 `UIView` 기반 component로 렌더링됩니다. | `ListComponent` |
 | Auto Layout 렌더링 | 기본적으로 component view를 cell content view edge에 고정합니다. | `layoutView` |
 | self-sizing cell | component view의 Auto Layout 크기를 collection view cell 크기에 반영합니다. | `ComponentCell` |
-| component height | component가 row 높이를 직접 지정할 수 있습니다. 지정하지 않으면 self-sizing을 사용합니다. `.square`를 쓰면 셀 너비와 같은 높이를 사용할 수 있습니다. | `ListComponent.height`, `ListComponentHeight` |
+| component height | component가 row 높이를 직접 지정할 수 있습니다. `height(context:)`가 공식 경로이고, `height`는 deprecated 호환용입니다. `.square`를 쓰면 셀 너비와 같은 높이를 사용할 수 있습니다. | `ListComponent.height(context:)`, `ListComponentHeight` |
 | coordinator | component가 재사용되는 동안 유지할 상태 객체를 만들 수 있습니다. | `makeCoordinator`, `ListComponentContext` |
 | reuse identifier override | 같은 component type을 여러 cell 종류로 나누어 등록할 수 있습니다. | `var reuseIdentifier` |
 | diff update | DifferenceKit으로 section/row 삽입, 삭제, 이동, 업데이트를 적용합니다. | `adapter.apply(updateStrategy:)` |
@@ -691,7 +691,7 @@ struct FixedArticleComponent: ListComponent {
 
   let content: Content
 
-  var height: ListComponentHeight {
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
     .absolute(72)
   }
 
@@ -708,6 +708,32 @@ struct FixedArticleComponent: ListComponent {
 `.absolute`를 사용하면 `ComponentCell`이 `systemLayoutSizeFitting`을 건너뛰고 지정한 높이를 바로 사용합니다. 높이가 콘텐츠보다 작으면 내부 view가 압축될 수 있으므로, 고정 높이에 맞는 view 구성을 함께 설계해야 합니다.
 
 `.square`를 사용하면 셀의 너비와 같은 높이를 사용합니다. grid처럼 폭이 레이아웃에서 정해지는 경우 정사각형 셀을 만들 때 유용합니다.
+
+`height(context:)`를 구현하면 셀의 현재 폭을 보고 더 현실적인 높이를 계산할 수 있습니다.
+
+```swift
+struct FeedCardComponent: ListComponent {
+  struct Content: Equatable {
+    let title: String
+  }
+
+  let content: Content
+
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .absolute(max(120, context.containerWidth * 0.72))
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> FeedCardView {
+    FeedCardView()
+  }
+
+  func updateView(_ view: FeedCardView, context: ListComponentContext<Void>) {
+    view.configure(title: content.title)
+  }
+}
+```
+
+이 패턴은 정사각형 이미지나 비율 기반 카드처럼, `automatic`이 첫 추정 높이에서 너무 낮게 시작할 수 있는 컴포넌트에 특히 유용합니다.
 
 component가 상태 객체를 가져야 한다면 coordinator를 사용합니다.
 

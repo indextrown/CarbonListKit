@@ -73,6 +73,39 @@ final class ComponentHeightExampleViewController: UIViewController {
 
       Section {
         Row(
+          id: "context-based",
+          component: ContextAwareHeightComponent(
+            content: .init(
+              title: "Context-aware height",
+              subtitle: "containerWidth를 보고 높이를 계산합니다.",
+              tintColor: .systemTeal
+            )
+          )
+        )
+      } header: {
+        Header(
+          id: "context-header",
+          component: HeightHeaderComponent(
+            content: .init(
+              title: "Context-aware .absolute",
+              subtitle: "height(context:)로 셀 폭을 보고 높이를 계산하는 상태"
+            )
+          )
+        )
+      } footer: {
+        Footer(
+          id: "context-footer",
+          component: HeightFooterComponent(
+            content: .init(text: "이 방식은 카드형 셀처럼 첫 추정 높이를 더 현실적으로 잡고 싶을 때 유용합니다.")
+          )
+        )
+      }
+      .layout(.vertical(spacing: 10))
+      .contentInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
+      .sectionSpacing(24)
+
+      Section {
+        Row(
           id: "fixed-72",
           component: FixedHeightComponent(
             content: .init(
@@ -195,6 +228,10 @@ private struct AutomaticHeightComponent: ListComponent {
 
   let content: Content
 
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .automatic
+  }
+
   func makeView(context: ListComponentContext<Void>) -> HeightCardView {
     HeightCardView()
   }
@@ -219,8 +256,8 @@ private struct FixedHeightComponent: ListComponent {
 
   let content: Content
 
-  var height: ListComponentHeight {
-     .absolute(content.height)
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .absolute(content.height)
   }
 
   func makeView(context: ListComponentContext<Void>) -> HeightCardView {
@@ -232,6 +269,34 @@ private struct FixedHeightComponent: ListComponent {
       title: content.title,
       subtitle: content.subtitle,
       badge: ".absolute(\(Int(content.height)))",
+      tintColor: content.tintColor
+    )
+  }
+}
+
+private struct ContextAwareHeightComponent: ListComponent {
+  struct Content: Equatable {
+    let title: String
+    let subtitle: String
+    let tintColor: UIColor
+  }
+
+  let content: Content
+
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    let estimatedHeight = max(120, context.containerWidth * 0.72)
+    return .absolute(estimatedHeight)
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> HeightCardView {
+    HeightCardView()
+  }
+
+  func updateView(_ view: HeightCardView, context: ListComponentContext<Void>) {
+    view.configure(
+      title: content.title,
+      subtitle: content.subtitle,
+      badge: ".absolute(width × 0.72)",
       tintColor: content.tintColor
     )
   }

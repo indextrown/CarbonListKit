@@ -483,18 +483,25 @@ struct ComponentHeightTests {
   func componentDefaultHeightIsAutomatic() {
     let component = TestComponent(content: .init(text: "내용"))
 
-    #expect(component.height == .automatic)
+    #expect(component.height(context: .init(containerWidth: 100)) == .automatic)
+  }
+
+  @Test("ListComponent는 높이 컨텍스트를 받아 컨테이너 너비를 반영할 수 있다")
+  func componentHeightCanUseContainerWidth() {
+    let component = WidthBasedHeightComponent(content: .init(text: "내용"))
+
+    #expect(component.height(context: .init(containerWidth: 100)) == .absolute(110))
   }
 
   @Test("Row equality는 component height 변경을 비교한다")
   func rowEqualityIncludesComponentHeight() {
     let base = Row(
       id: "row",
-      component: FixedHeightComponent(content: .init(text: "내용"), height: .absolute(44))
+      component: FixedHeightComponent(content: .init(text: "내용"), fixedHeight: 44)
     )
     let differentHeight = Row(
       id: "row",
-      component: FixedHeightComponent(content: .init(text: "내용"), height: .absolute(72))
+      component: FixedHeightComponent(content: .init(text: "내용"), fixedHeight: 72)
     )
 
     #expect(base != differentHeight)
@@ -504,7 +511,7 @@ struct ComponentHeightTests {
   @Test("ComponentCell은 absolute height면 Auto Layout 측정 대신 지정 높이를 사용한다")
   func componentCellUsesAbsoluteHeight() {
     let cell = ComponentCell(frame: CGRect(x: 0, y: 0, width: 100, height: 80))
-    let component = FixedHeightComponent(content: .init(text: "내용"), height: .absolute(123))
+    let component = FixedHeightComponent(content: .init(text: "내용"), fixedHeight: 123)
     cell.render(component: AnyListComponent(component))
 
     let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: 0, section: 0))
@@ -528,6 +535,21 @@ struct ComponentHeightTests {
     let fittedAttributes = cell.preferredLayoutAttributesFitting(attributes)
 
     #expect(fittedAttributes.size.height == 100)
+  }
+
+  @MainActor
+  @Test("ComponentCell은 높이 컨텍스트를 반영한 absolute height를 사용할 수 있다")
+  func componentCellUsesContextBasedHeight() {
+    let cell = ComponentCell(frame: CGRect(x: 0, y: 0, width: 100, height: 80))
+    let component = WidthBasedHeightComponent(content: .init(text: "내용"))
+    cell.render(component: AnyListComponent(component))
+
+    let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: 0, section: 0))
+    attributes.size = CGSize(width: 100, height: 80)
+
+    let fittedAttributes = cell.preferredLayoutAttributesFitting(attributes)
+
+    #expect(fittedAttributes.size.height == 110)
   }
 }
 
@@ -605,7 +627,11 @@ private struct FixedHeightComponent: ListComponent {
   }
 
   let content: Content
-  let height: ListComponentHeight
+  let fixedHeight: CGFloat
+
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .absolute(fixedHeight)
+  }
 
   func makeView(context: ListComponentContext<Void>) -> UILabel {
     UILabel()
@@ -623,8 +649,28 @@ private struct SquareHeightComponent: ListComponent {
 
   let content: Content
 
-  var height: ListComponentHeight {
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
     .square
+  }
+
+  func makeView(context: ListComponentContext<Void>) -> UILabel {
+    UILabel()
+  }
+
+  func updateView(_ view: UILabel, context: ListComponentContext<Void>) {
+    view.text = content.text
+  }
+}
+
+private struct WidthBasedHeightComponent: ListComponent {
+  struct Content: Equatable {
+    let text: String
+  }
+
+  let content: Content
+
+  func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    .absolute(context.containerWidth + 10)
   }
 
   func makeView(context: ListComponentContext<Void>) -> UILabel {

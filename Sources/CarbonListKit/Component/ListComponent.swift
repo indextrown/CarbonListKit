@@ -20,6 +20,18 @@ public struct ListComponentContext<Coordinator> {
   }
 }
 
+/// 컴포넌트 높이를 계산할 때 사용할 컨텍스트입니다.
+public struct ListComponentHeightContext {
+  /// 컨테이너의 현재 너비
+  public let containerWidth: CGFloat
+
+  /// ListComponentHeightContext를 초기화합니다.
+  /// - Parameter containerWidth: 컨테이너의 현재 너비
+  public init(containerWidth: CGFloat) {
+    self.containerWidth = containerWidth
+  }
+}
+
 /// 리스트 컴포넌트의 높이 결정 방식을 나타냅니다.
 public enum ListComponentHeight: Equatable {
   /// Auto Layout 기반 self-sizing으로 높이를 계산합니다.
@@ -42,7 +54,10 @@ public protocol ListComponent {
 
   /// 컴포넌트 콘텐츠
   var content: Content { get }
-  /// 컴포넌트 높이
+  /// 컴포넌트 높이를 컨텍스트를 기반으로 계산합니다.
+  func height(context: ListComponentHeightContext) -> ListComponentHeight
+  /// 컴포넌트 높이의 정적 기본값입니다.
+  @available(*, deprecated, message: "Use height(context:) instead.")
   var height: ListComponentHeight { get }
   /// 재사용 식별자
   var reuseIdentifier: String { get }
@@ -59,8 +74,14 @@ public protocol ListComponent {
 
 extension ListComponent {
   /// 기본 높이는 Auto Layout 기반 self-sizing입니다.
+  @available(*, deprecated, message: "Use height(context:) instead.")
   public var height: ListComponentHeight {
     .automatic
+  }
+
+  /// 기본 높이 계산은 정적인 `height` 값을 그대로 사용합니다.
+  public func height(context: ListComponentHeightContext) -> ListComponentHeight {
+    height
   }
 
   /// 기본 재사용 식별자를 반환합니다.

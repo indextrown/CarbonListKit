@@ -56,8 +56,9 @@ final class ComponentCell: UICollectionViewCell {
     let attributes = layoutAttributes.copy() as? UICollectionViewLayoutAttributes
       ?? layoutAttributes
     let width = layoutAttributes.size.width
+    let heightContext = ListComponentHeightContext(containerWidth: width)
 
-    switch renderedComponent?.height {
+    switch renderedComponent?.height(context: heightContext) {
     case .absolute(let height):
       attributes.size.height = height
       return attributes
